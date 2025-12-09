@@ -1,10 +1,20 @@
 /* src/index.css */
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* Залиште лише базові стилі для чистого старту */
+/* 1. ВИЗНАЧЕННЯ КІБЕРПАНК КОЛЬОРІВ ТА ТІНЕЙ */
+:root {
+  /* Кольори */
+  --color-neo-dark: #05060a;
+  --color-neo-blue: #00eaff;
+  --color-neo-pink: #ff00e6;
+  --color-neo-purple: #ae48ff;
+
+  /* Тіні */
+  --shadow-neon: 0 0 5px rgba(0, 234, 255, 0.5), 0 0 10px rgba(255, 0, 230, 0.5);
+}
+
+/* Базові стилі для чистого старту */
 body {
   margin: 0;
   min-height: 100vh;
