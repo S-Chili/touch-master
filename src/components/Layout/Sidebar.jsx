@@ -1,53 +1,91 @@
-// src/Layout/Sidebar.jsx
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useSettings } from '../../context/useSettings.js'; 
+import { useSettings } from '../../context/useSettings.js';
+
+const icons = {
+    dashboard: (
+        <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" className="neon-icon">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="12" y="3" width="7" height="4" rx="1" />
+            <rect x="12" y="9" width="7" height="7" rx="1" />
+            <rect x="3" y="12" width="7" height="4" rx="1" />
+        </svg>
+    ),
+
+    lessons: (
+        <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" className="neon-icon">
+            <path d="M4 5h14M4 11h14M4 17h14" />
+        </svg>
+    ),
+
+    games: (
+        <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" className="neon-icon">
+            <rect x="3" y="7" width="16" height="10" rx="2" />
+            <circle cx="9" cy="12" r="1.5" />
+            <circle cx="14" cy="12" r="1.5" />
+        </svg>
+    ),
+
+    stats: (
+        <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" className="neon-icon">
+            <path d="M5 15V9M11 15V5M17 15V11" />
+        </svg>
+    ),
+
+    settings: (
+        <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" className="neon-icon">
+            <circle cx="11" cy="11" r="3" />
+            <path d="M11 2v3M11 19v3M3.8 4.6l2.1 2.1M16.1 17.3l2.1 2.1M2 11h3M19 11h3" />
+        </svg>
+    )
+};
 
 const navItems = [
-    { path: '/dashboard', label_uk: 'КОМАНДНИЙ ЦЕНТР', label_en: 'DASHBOARD' },
-    { path: '/lessons', label_uk: 'УРОКИ', label_en: 'LESSONS' },
-    { path: '/games', label_uk: 'ІГРИ', label_en: 'GAMES' },
-    { path: '/stats', label_uk: 'АНАЛІТИКА', label_en: 'STATISTICS' },
-    { path: '/settings', label_uk: 'КОНФІГУРАЦІЯ', label_en: 'SETTINGS' },
+    { path: '/dashboard', icon: icons.dashboard, label_uk: 'КОМАНДНИЙ ЦЕНТР', label_en: 'DASHBOARD' },
+    { path: '/lessons',   icon: icons.lessons,   label_uk: 'УРОКИ', label_en: 'LESSONS' },
+    { path: '/games',     icon: icons.games,     label_uk: 'ІГРИ', label_en: 'GAMES' },
+    { path: '/stats',     icon: icons.stats,     label_uk: 'АНАЛІТИКА', label_en: 'STATISTICS' },
+    { path: '/settings',  icon: icons.settings,  label_uk: 'КОНФІГУРАЦІЯ', label_en: 'SETTINGS' },
 ];
 
 const Sidebar = () => {
     const { language } = useSettings();
     const isUK = language === 'uk';
-    
-    // Стилі для кіберпанк-навігації
-    const baseStyle = "block py-2 px-4 rounded-lg text-lg font-bold transition duration-200";
-    const activeStyle = baseStyle + " text-gray-900 bg-cyan-400 shadow-lg shadow-cyan-500/50";
-    const inactiveStyle = baseStyle + " text-gray-300 hover:text-cyan-400 hover:bg-gray-800";
+
+    const baseStyle =
+        "flex items-center gap-3 py-3 px-4 text-lg font-semibold rounded-lg transition-all duration-200";
+
+    const activeStyle =
+        baseStyle +
+        " text-cyan-300 bg-cyan-900/20 shadow-[0_0_12px_rgba(0,255,255,0.5)] backdrop-blur-sm border border-cyan-500/40";
+
+    const inactiveStyle =
+        baseStyle +
+        " text-gray-400 hover:text-cyan-300 hover:bg-gray-900/40 hover:border-cyan-500/20 border border-transparent";
 
     return (
-        <aside className="w-64 bg-gray-950 p-6 flex flex-col border-r-2 border-cyan-700/50 shadow-2xl shadow-cyan-500/10">
-            
-            {/* Заголовок / Лого (Кіберпанк) */}
-            <h2 className="text-3xl font-mono mb-10 text-pink-500 tracking-wider border-b-2 border-pink-500/30 pb-2">
+        <aside className="w-64 bg-black/90 p-6 flex flex-col border-r border-cyan-500/30 shadow-2xl shadow-cyan-500/10">
+
+            <h2 className="text-3xl font-mono font-bold mb-6 text-pink-500 tracking-widest">
                 TOUCHMASTER
             </h2>
-            
-            {/* Навігація */}
+
+            <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-cyan-400 to-transparent mb-8 shadow-[0_0_12px_rgba(0,255,255,0.8)]"></div>
+
             <nav className="space-y-4 flex-grow">
                 {navItems.map((item) => (
                     <NavLink
                         key={item.path}
                         to={item.path}
-                        className={({ isActive }) => 
+                        className={({ isActive }) =>
                             isActive ? activeStyle : inactiveStyle
                         }
                     >
+                        <span className="text-cyan-300">{item.icon}</span>
                         {isUK ? item.label_uk : item.label_en}
                     </NavLink>
                 ))}
             </nav>
-
-            {/* Футер / Інфо про користувача */}
-            <div className="text-sm text-gray-500 pt-6 border-t border-gray-700/50">
-                <p>User: Admin_01</p>
-                <p>Status: ONLINE</p>
-            </div>
         </aside>
     );
 };
