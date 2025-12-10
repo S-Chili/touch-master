@@ -98,7 +98,7 @@ const Dashboard = () => {
           
           <section className="bg-black/40 border border-cyan-700/20 rounded-xl p-6 backdrop-blur shadow-[0_0_30px_rgba(0,234,255,0.06)] mb-6">
             <div className="mb-6">
-              <NeonKeyboard />
+              <NeonKeyboard showLabels={false}/>
             </div>
 
             <div className="flex items-center justify-between text-sm text-gray-300 mb-4">
