@@ -1,5 +1,5 @@
 import React from 'react';
-
+import { Link } from "react-router-dom";
 const NEO_BLUE = '#00eaff'; 
 const NEO_PINK = '#ff00e6'; 
 const NEO_DARK = '#0a0c11'; 
@@ -106,17 +106,17 @@ const Lessons = () => {
                     />
                 )}
                 
-                <button
-                    className={`
-                        mt-8 px-10 py-3 text-xl font-bold rounded-lg
-                        border-2 border-[${NEO_BLUE}] text-[${NEO_BLUE}] 
-                        shadow-[0_0_15px_rgba(0,234,255,0.6)] 
-                        hover:bg-[${NEO_BLUE}] hover:text-black 
-                        transition-all duration-300 active:scale-95
-                    `}
+                <Link
+                  to={`/lessons/${currentLesson.number}`}
+                  className="mt-8 px-10 py-3 text-xl font-bold rounded-lg
+                            border-2 border-[${NEO_BLUE}] text-[${NEO_BLUE}] 
+                            shadow-[0_0_15px_rgba(0,234,255,0.6)] 
+                            hover:bg-[${NEO_BLUE}] hover:text-black 
+                            transition-all duration-300 active:scale-95"
                 >
-                    Continue Training
-                </button>
+                  Continue Training →
+                </Link>
+
 
             </div>
 
