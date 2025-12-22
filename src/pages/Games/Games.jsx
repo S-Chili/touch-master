@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from "react-router-dom";
 
 const NEO_BLUE = '#00eaff'; 
 const NEO_PINK = '#ff00e6'; 
@@ -28,14 +29,9 @@ const IconMaze = ({ color }) => (
     </svg>
 );
 
-
-const GameCard = ({ title, description, icon, color, isNew = false, neoPinkColor }) => {
-    
+const GameCard = ({ title, description, icon, color, isNew = false, neoPinkColor, path }) => {
     const IconComponent = icon; 
 
-    const shadowBase = `shadow-[0_0_15px_var(--shadow-base)]`;
-    const shadowHover = `group-hover:shadow-[0_0_30px_var(--shadow-hover)]`;
-    
     const hexToRgba = (hex, alpha) => {
         const r = parseInt(hex.slice(1, 3), 16);
         const g = parseInt(hex.slice(3, 5), 16);
@@ -51,14 +47,16 @@ const GameCard = ({ title, description, icon, color, isNew = false, neoPinkColor
     };
 
     return (
-        <div 
+        <Link 
+            to={path}
             className={`
                 group p-6 rounded-xl transition-all duration-300
                 flex flex-col items-center text-center 
                 bg-black/40 backdrop-blur-sm cursor-pointer
-                border-2 border-[var(--card-color)] // Базовий колір рамки
-                ${shadowBase} ${shadowHover} 
-                hover:bg-[var(--bg-hover)] // Використовуємо змінну для фону ховера
+                border-2 border-(--card-color)
+                shadow-[0_0_15px_var(--shadow-base)]
+                hover:shadow-[0_0_30px_var(--shadow-hover)]
+                hover:bg-(--bg-hover)
             `}
             style={styleVariables} 
         >
@@ -66,8 +64,8 @@ const GameCard = ({ title, description, icon, color, isNew = false, neoPinkColor
                 <IconComponent color={color} /> 
                 {isNew && (
                     <span 
-                        className={`absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 
-                                     text-black text-xs font-bold px-2 py-0.5 rounded-full`}
+                        className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 
+                                     text-black text-xs font-bold px-2 py-0.5 rounded-full"
                         style={{
                             backgroundColor: neoPinkColor, 
                             boxShadow: `0 0 8px ${neoPinkColor}99`, 
@@ -78,36 +76,31 @@ const GameCard = ({ title, description, icon, color, isNew = false, neoPinkColor
                 )}
             </div>
             
-            <h3 className={`text-2xl font-bold tracking-wide text-white mb-2 text-[var(--card-color)]`}>
+            <h3 className="text-2xl font-bold tracking-wide mb-2 text-(--card-color)">
                 {title}
             </h3>
-            <p className="text-sm text-gray-300">
+            <p className="text-sm text-gray-300 mb-5">
                 {description}
             </p>
             
-            <button
+            <div
                 className={`
-                    mt-5 px-6 py-2 text-md font-bold rounded-lg
-                    border border-[var(--card-color)] text-[var(--card-color)]
-                    transition-all duration-300 active:scale-95
-                    
-                    // Кнопка: Ховер ефекти
-                    group-hover:bg-[var(--card-color)] group-hover:text-black 
+                    mt-auto px-6 py-2 text-md font-bold rounded-lg
+                    border border-(--card-color) text-(--card-color)
+                    transition-all duration-300
+                    group-hover:bg-(--card-color) group-hover:text-black 
                 `}
                 style={{ 
                     boxShadow: `0 0 8px ${hexToRgba(color, 0.4)}`, 
-                    '--tw-shadow-color': color,
-                    '--tw-shadow': `var(--tw-shadow-color) 0 0 15px 0`,
                 }}
             >
                 Play Now
-            </button>
-        </div>
+            </div>
+        </Link>
     );
 };
 
 const Games = () => {
-    
     const gamesData = [
         { 
             title: 'RACE AGAINST TIME', 
@@ -115,6 +108,7 @@ const Games = () => {
             icon: IconLightning, 
             color: NEO_BLUE,
             isNew: false,
+            path: "/games/race"
         },
         { 
             title: 'ACCURACY SHIELD', 
@@ -122,6 +116,7 @@ const Games = () => {
             icon: IconShield, 
             color: NEO_PINK,
             isNew: true,
+            path: "/games/accuracy"
         },
         { 
             title: 'MEMORY MAZE', 
@@ -129,15 +124,14 @@ const Games = () => {
             icon: IconMaze, 
             color: NEO_PURPLE,
             isNew: false,
+            path: "/games/memory"
         },
     ];
 
-
     return (
-        <div className={`relative w-full min-h-screen p-8 text-cyan-300 font-mono bg-[${NEO_DARK}]`}>
-            
-            <h1 className="text-4xl font-extrabold text-white mb-10 tracking-wider text-center">
-                TYPING ARCADE
+        <div className="relative w-full min-h-screen p-8 font-mono bg-[#0a0c11]">
+            <h1 className="text-4xl font-extrabold text-white mb-10 tracking-wider text-center uppercase">
+                Typing Arcade
             </h1>
             
             <p className="text-center text-gray-400 max-w-2xl mx-auto mb-16">
@@ -145,21 +139,14 @@ const Games = () => {
             </p>
 
             <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-                
                 {gamesData.map((game, index) => (
                     <GameCard 
                         key={index}
-                        title={game.title}
-                        description={game.description}
-                        icon={game.icon}
-                        color={game.color}
-                        isNew={game.isNew}
+                        {...game} 
                         neoPinkColor={NEO_PINK} 
                     />
                 ))}
-
             </div>
-            
         </div>
     );
 };

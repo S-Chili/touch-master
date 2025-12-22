@@ -10,6 +10,7 @@ import Stats from './pages/Stats/Stats.jsx';
 import Layout from './components/Layout/Layout.jsx'; 
 import LessonDynamic from "./pages/Lessons/LessonDynamic.jsx";
 
+import RaceAgainstTime from "./pages/Games/RaceAgainstTime.jsx";
 function App() {
   return (
     <Routes>
@@ -25,7 +26,10 @@ function App() {
           <Route path=":id" element={<LessonDynamic />} /> 
         </Route>
 
-        <Route path="games" element={<Games />} />
+        <Route path="games">
+          <Route index element={<Games />} />
+          <Route path="race" element={<RaceAgainstTime />} />
+        </Route>
         <Route path="stats" element={<Stats />} />
 
       </Route>

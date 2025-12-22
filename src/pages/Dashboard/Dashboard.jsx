@@ -90,11 +90,11 @@ const Dashboard = () => {
   return (
     <div className="relative w-full min-h-screen text-cyan-300 font-mono px-2">
 
-      <div className="absolute inset-0 opacity-6 bg-[linear-gradient(90deg,rgba(0,255,255,0.02)_1px,transparent_1px),linear-gradient(rgba(255,0,200,0.02)_1px,transparent_1px)] bg-[size:80px_80px] pointer-events-none"></div>
+      <div className="absolute inset-0 opacity-6 bg-[linear-gradient(90deg,rgba(0,255,255,0.02)_1px,transparent_1px),linear-gradient(rgba(255,0,200,0.02)_1px,transparent_1px)] bg-size-[80px_80px] pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto pt-8 flex flex-col lg:flex-row gap-6">
 
-        <div className="w-full lg:w-[80%] lg:flex-shrink-0">
+        <div className="w-full lg:w-[80%] lg:shrink-0">
           
           <section className="bg-black/40 border border-cyan-700/20 rounded-xl p-6 backdrop-blur shadow-[0_0_30px_rgba(0,234,255,0.06)] mb-6">
             <div className="mb-6">
@@ -123,7 +123,7 @@ const Dashboard = () => {
           </footer>
         </div>
 
-        <div className="w-full lg:w-[20%] lg:flex-shrink-0">
+        <div className="w-full lg:w-[20%] lg:shrink-0">
           
           <StatsPanel isUK={isUK} />
 
@@ -131,7 +131,7 @@ const Dashboard = () => {
             
             <div className="bg-black/40 border border-cyan-700/20 rounded-xl p-4 shadow-[0_0_18px_rgba(0,234,255,0.04)]">
               <h3 className="text-cyan-300 text-lg mb-3 flex items-center gap-2"><IconChart /> Performance</h3>
-              <div className="w-full h-36 bg-gradient-to-r from-cyan-500/6 to-pink-500/6 rounded"></div>
+              <div className="w-full h-36 bg-linear-to-r from-cyan-500/6 to-pink-500/6 rounded"></div>
             </div>
 
             <div className="bg-black/40 border border-cyan-700/20 rounded-xl p-4 shadow-[0_0_18px_rgba(0,234,255,0.04)]">

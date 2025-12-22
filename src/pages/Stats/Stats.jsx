@@ -54,7 +54,7 @@ const ChartPlaceholder = ({ title, color, height = 'h-64' }) => {
                 <IconChart color={color} /> {title}
             </h3>
             
-            <div className={`w-full ${height} -mt-4 bg-gradient-to-t ${gradientStops} rounded-lg relative`}>
+            <div className={`w-full ${height} -mt-4 bg-linear-to-t ${gradientStops} rounded-lg relative`}>
                 <div 
                     className={`absolute inset-0 border-t-2 border-dashed border-[${color}]/50`}
                     style={{ clipPath: 'polygon(0% 80%, 20% 65%, 40% 75%, 60% 50%, 80% 60%, 100% 40%, 100% 100%, 0% 100%)' }}

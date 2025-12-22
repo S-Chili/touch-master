@@ -1,20 +1,20 @@
 const lessons = [
   {
     id: 1,
-    title: "Lesson 1 — Base Hand Position",
+    title: "Lesson 1 — Home Row Mastery",
     description:
       "Learn the fundamental position for touch typing hands over the keyboard.",
     component: () => import("../pages/Lessons/lesson1.jsx"),
   },
   {
     id: 2,
-    title: "Lesson 2 — F and J Keys",
+    title: "Lesson 2 — E and I Keys",
     description: "Introduce the key anchors for your index fingers.",
     component: () => import("../pages/Lessons/lesson2.jsx"),
   },
   {
     id: 3,
-    title: "Lesson 3 — The Home Row",
+    title: "Lesson 3 — T, R, and O Keys",
     description:
       "Master the center row (ASDF JKL;) which serves as the base of operations.",
     component: () => import("../pages/Lessons/lesson3.jsx"),

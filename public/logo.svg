@@ -1,0 +1,23 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8A2BE2" />
+      <stop offset="100%" stop-color="#4B0082" />
+    </linearGradient>
+    <filter id="neonGlow">
+      <feGaussianBlur stdDeviation="2.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  <path 
+    d="M10 20L50 10L90 20L85 80L50 95L15 80L10 20Z" 
+    fill="url(#bgGradient)" 
+    stroke="#FF00E6" 
+    stroke-width="2"
+  />
+  <path 
+    d="M55 25L35 55H50L45 80L65 50H50L55 25Z" 
+    fill="#FFF200" 
+    filter="url(#neonGlow)"
+  />
+</svg>
