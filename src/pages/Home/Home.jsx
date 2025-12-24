@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 export default function HomePage() {
   const bgDark = 'bg-[var(--color-neo-dark)]';
@@ -74,20 +75,20 @@ export default function HomePage() {
         className="absolute inset-0 pointer-events-none 
         bg-[linear-gradient(90deg,rgba(0,255,255,0.12)_1px,transparent_1px),
              linear-gradient(rgba(255,0,230,0.12)_1px,transparent_1px)]
-        bg-[size:55px_55px]"
+        bg-size-[55px_55px]"
       ></div>
-      <nav className={`w-full flex justify-end gap-4 p-6 z-20 backdrop-blur-sm bg-white/5 border-b border-[var(--color-neo-blue)]/40 shadow-[0_0_10px_rgba(0,234,255,0.2)]`}>
-        <button className={`px-6 py-2 border border-[var(--color-neo-pink)] text-[var(--color-neo-pink)] rounded-md shadow-[0_0_5px_var(--color-neo-pink)aa] hover:bg-[var(--color-neo-pink)] hover:text-[var(--color-neo-dark)] transition-all duration-300`}>
+      <nav className={`w-full flex justify-end gap-4 p-6 z-20 backdrop-blur-sm bg-white/5 border-b border-(--color-neo-blue)/40 shadow-[0_0_10px_rgba(0,234,255,0.2)]`}>
+        <button className={`px-6 py-2 border border-(--color-neo-pink) text-(--color-neo-pink) rounded-md shadow-[0_0_5px_var(--color-neo-pink)aa] hover:bg-(--color-neo-pink) hover:text-(--color-neo-dark) transition-all duration-300`}>
           Log in
         </button>
 
-        <button className={`px-6 py-2 border border-[var(--color-neo-blue)] text-[var(--color-neo-blue)] rounded-md shadow-[0_0_5px_var(--color-neo-blue)aa] hover:bg-[var(--color-neo-blue)] hover:text-[var(--color-neo-dark)] transition-all duration-300`}>
+        <button className={`px-6 py-2 border border-(--color-neo-blue) text-(--color-neo-blue) rounded-md shadow-[0_0_5px_var(--color-neo-blue)aa] hover:bg-(--color-neo-blue) hover:text-(--color-neo-dark) transition-all duration-300`}>
           Sign up
         </button>
       </nav>
 
-      <header className="flex flex-col items-center justify-center flex-grow text-center px-6 z-10 select-none">
-        <h1 className={`relative text-7xl sm:text-8xl font-extrabold text-[var(--color-neo-blue)] drop-shadow-[0_0_5px_var(--color-neo-pink)aa] glitch`}>TOUCHMASTER</h1>
+      <header className="flex flex-col items-center justify-center grow text-center px-6 z-10 select-none">
+        <h1 className={`relative text-7xl sm:text-8xl font-extrabold text-(--color-neo-blue) drop-shadow-[0_0_5px_var(--color-neo-pink)aa] glitch`}>TOUCHMASTER</h1>
         <style>
           {`
             .glitch {
@@ -131,20 +132,19 @@ export default function HomePage() {
          `}
         </style>
 
-        <h2 className={`mt-4 text-xl sm:text-2xl text-[var(--color-neo-pink)] tracking-widest opacity-80`}>
+        <h2 className={`mt-4 text-xl sm:text-2xl text-(--color-neo-pink) tracking-widest opacity-80`}>
           LEARN TO TYPE WITHOUT LOOKING AT THE KEYS
         </h2>
-
-        <button
-          className={`mt-12 px-12 py-4 text-2xl font-bold border-2 border-[var(--color-neo-blue)] text-[var(--color-neo-blue)] 
-          rounded-lg shadow-[0_0_10px_var(--color-neo-blue)aa] hover:bg-[var(--color-neo-blue)] hover:text-[var(--color-neo-dark)] transition-all duration-300`}
+        <Link
+          to="/dashboard"
+          className={`mt-12 px-12 py-4 text-2xl font-bold border-2 border-(--color-neo-blue) text-(--color-neo-blue) 
+          rounded-lg shadow-[0_0_10px_var(--color-neo-blue)aa] hover:bg-(--color-neo-blue) hover:text-(--color-neo-dark) transition-all duration-300`}
         >
           Start Learning
-        </button>
+        </Link>
       </header>
-
       <section className="py-20 z-10">
-        <h3 className="text-center text-[var(--color-neo-pink)] text-3xl mb-12 tracking-wider font-extrabold">
+        <h3 className="text-center text-(--color-neo-pink) text-3xl mb-12 tracking-wider font-extrabold">
           HOW IT WORKS
         </h3>
 
@@ -157,10 +157,8 @@ export default function HomePage() {
                 group relative p-8 rounded-lg overflow-hidden cursor-pointer h-full
                 flex flex-col items-center text-center
                 bg-transparent 
-                // !!! ВИДАЛЕНО RAMКУ (border) !!!
-                // Додаємо слабке світіння внизу, щоб підкреслити блок, і збільшуємо його при наведенні
-                shadow-[0_10px_10px_-5px_rgba(0,234,255,0.1),_0_0_5px_rgba(0,234,255,0.2)] 
-                hover:shadow-[0_15px_15px_-5px_rgba(0,234,255,0.4),_0_0_10px_rgba(0,234,255,0.5)]
+                shadow-[0_10px_10px_-5px_rgba(0,234,255,0.1),0_0_5px_rgba(0,234,255,0.2)] 
+                hover:shadow-[0_15px_15px_-5px_rgba(0,234,255,0.4),0_0_10px_rgba(0,234,255,0.5)]
                 transition-all duration-300
               `}
             >
@@ -168,11 +166,11 @@ export default function HomePage() {
                 
                 {item.icon} 
 
-                <h4 className="text-xl font-semibold text-[var(--color-neo-blue)] tracking-wide mt-2">
+                <h4 className="text-xl font-semibold text-(--color-neo-blue) tracking-wide mt-2">
                   {item.title}
                 </h4>
                 
-                <span className={`mt-1 text-sm text-[var(--color-neo-blue)] opacity-90`}>
+                <span className={`mt-1 text-sm text-(--color-neo-blue) opacity-90`}>
                   {item.description}
                 </span>
               </div>

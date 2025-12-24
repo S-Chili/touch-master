@@ -9,6 +9,7 @@ import Games from './pages/Games/Games.jsx';
 import Stats from './pages/Stats/Stats.jsx';
 import Layout from './components/Layout/Layout.jsx'; 
 import LessonDynamic from "./pages/Lessons/LessonDynamic.jsx";
+import AccuracyShield from "./pages/Games/AccuracyShield.jsx";
 
 import RaceAgainstTime from "./pages/Games/RaceAgainstTime.jsx";
 function App() {
@@ -29,6 +30,7 @@ function App() {
         <Route path="games">
           <Route index element={<Games />} />
           <Route path="race" element={<RaceAgainstTime />} />
+          <Route path="accuracy" element={<AccuracyShield />} />
         </Route>
         <Route path="stats" element={<Stats />} />
 
