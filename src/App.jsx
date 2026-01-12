@@ -10,8 +10,8 @@ import Stats from './pages/Stats/Stats.jsx';
 import Layout from './components/Layout/Layout.jsx'; 
 import LessonDynamic from "./pages/Lessons/LessonDynamic.jsx";
 import AccuracyShield from "./pages/Games/AccuracyShield.jsx";
-
 import RaceAgainstTime from "./pages/Games/RaceAgainstTime.jsx";
+import MemoryMaze from './pages/Games/MemoryMaze.jsx';
 function App() {
   return (
     <Routes>
@@ -31,6 +31,7 @@ function App() {
           <Route index element={<Games />} />
           <Route path="race" element={<RaceAgainstTime />} />
           <Route path="accuracy" element={<AccuracyShield />} />
+          <Route path="memory" element={<MemoryMaze />} />
         </Route>
         <Route path="stats" element={<Stats />} />
 
