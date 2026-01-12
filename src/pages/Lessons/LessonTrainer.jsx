@@ -1,6 +1,9 @@
-import React, { useEffect, useMemo, useCallback, useState } from "react";
+import React, { useEffect, useMemo, useCallback, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import NeonKeyboard from "../../components/NeonKeyboard.jsx";
+import { addSession } from "../../data/statsStore";
+import { emitStatsUpdate } from "../../data/statsEvents";
+
 
 const PASS_ACCURACY = 90;
 
@@ -134,6 +137,8 @@ export default function LessonTrainer({ config }) {
   const [elapsedMs, setElapsedMs] = useState(0);
 
   const highlightKeys = currentKey ? [currentKey.toLowerCase()] : [];
+  const savedRef = useRef(false);
+
 
   const accuracy = useMemo(() => {
     const total = correctPresses + mistakes;
@@ -159,6 +164,35 @@ export default function LessonTrainer({ config }) {
   const random = keys[Math.floor(Math.random() * keys.length)];
   setCurrentKey(random);
 }, [stageIndex, stages]);
+
+  useEffect(() => {
+  if (!lessonFinished) return;
+  if (savedRef.current) return;
+  savedRef.current = true;
+
+  addSession({
+    mode: "lesson",
+    id: config?.id ?? "lesson",
+    wpm,
+    accuracy,
+    timeMs: elapsedMs,
+    correct: correctPresses,
+    mistakes,
+    score: progress, // Total %
+    createdAt: Date.now(),
+  });
+
+  emitStatsUpdate();
+}, [
+  lessonFinished,
+  config?.id,
+  wpm,
+  accuracy,
+  elapsedMs,
+  correctPresses,
+  mistakes,
+  progress,
+]);
 
 
 const handleKeyPress = useCallback(
@@ -265,6 +299,7 @@ const handleKeyPress = useCallback(
     setElapsedMs(0);
     setCurrentKey(null);
     setKeyboardErrorFlash(false);
+    savedRef.current = false;
 
     window.setTimeout(() => {
       generateNextKey(0);
