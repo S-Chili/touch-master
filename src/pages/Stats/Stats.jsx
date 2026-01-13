@@ -50,42 +50,121 @@ const StatMetricCard = ({ title, value, unit, color }) => (
   </div>
 );
 
-const ChartPlaceholder = ({ title, color, height = "h-64" }) => {
-  const gradientStops =
-    color === NEO_BLUE
-      ? "from-cyan-700/5 to-cyan-400/20"
-      : color === NEO_PINK
-      ? "from-pink-700/5 to-pink-400/20"
-      : "from-purple-700/5 to-purple-400/20";
+function mapToScreenPoints(series, width, height, pad = 18) {
+  if (!series?.length) return [];
+
+  const xs = series.map((p) => p.x);
+  const ys = series.map((p) => p.y);
+
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+
+  const dx = maxX - minX || 1;
+  const dy = maxY - minY || 1;
+
+  return series.map((p) => {
+    const x = pad + ((p.x - minX) / dx) * (width - pad * 2);
+    const y = height - pad - ((p.y - minY) / dy) * (height - pad * 2);
+    return { x, y, v: p.y };
+  });
+}
+
+function LineChartMini({ title, color, series, height = 320 }) {
+  const w = 900;
+  const h = height;
+
+  const screen = useMemo(() => mapToScreenPoints(series, w, h), [series, h]);
+  const points = useMemo(
+    () => screen.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" "),
+    [screen]
+  );
+
+  const last = useMemo(() => {
+    if (!series?.length) return 0;
+    const v = series[series.length - 1].y;
+    return Number.isFinite(v) ? v : 0;
+  }, [series]);
 
   return (
     <div
-      className={`
-        w-full ${height} p-4 rounded-xl transition-all duration-300
-        bg-black/50 backdrop-blur-sm border
-      `}
-      style={{
-        borderColor: `${color}55`,
-        boxShadow: `0 0 20px ${color}1a`,
-      }}
+      className="w-full p-4 rounded-xl bg-black/50 backdrop-blur-sm border"
+      style={{ borderColor: `${color}55`, boxShadow: `0 0 20px ${color}1a` }}
     >
       <h3 className="text-lg font-semibold mb-3 flex items-center gap-2" style={{ color }}>
         <IconChart color={color} /> {title}
+        <span className="ml-auto text-xs text-gray-400">last: {Math.round(last)}</span>
       </h3>
 
-      <div className={`w-full ${height} -mt-4 bg-linear-to-t ${gradientStops} rounded-lg relative`}>
-        <div
-          className="absolute inset-0 border-t-2 border-dashed"
-          style={{
-            borderColor: `${color}88`,
-            clipPath:
-              "polygon(0% 80%, 20% 65%, 40% 75%, 60% 50%, 80% 60%, 100% 40%, 100% 100%, 0% 100%)",
-          }}
-        />
-      </div>
+      {!screen.length ? (
+        <div className="h-80 flex items-center justify-center text-gray-500">
+          No data yet (play a lesson/game to generate sessions)
+        </div>
+      ) : (
+        <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-80">
+          <g opacity="0.25">
+            {[0.25, 0.5, 0.75].map((t, i) => (
+              <line key={i} x1="0" x2={w} y1={h * t} y2={h * t} stroke="white" strokeWidth="1" />
+            ))}
+          </g>
+
+          <polyline
+            fill="none"
+            stroke={color}
+            strokeWidth="4"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            points={points}
+          />
+
+          {screen.map((p, i) => (
+            <circle
+              key={i}
+              cx={p.x}
+              cy={p.y}
+              r={5}
+              fill={color}
+              opacity={i === screen.length - 1 ? 1 : 0.55}
+            />
+          ))}
+        </svg>
+      )}
     </div>
   );
-};
+}
+
+
+function normalizeSeries(raw) {
+  const arr = Array.isArray(raw) ? raw : [];
+
+  const out = arr
+    .map((p) => {
+      const rawX = p?.x ?? p?.ts ?? p?.time ?? p?.date;
+      const rawY = p?.y ?? p?.value ?? p?.avg ?? p?.wpm ?? p?.accuracy;
+
+      let x =
+        typeof rawX === "number"
+          ? rawX
+          : typeof rawX === "string"
+          ? Date.parse(rawX)
+          : NaN;
+
+      let y =
+        typeof rawY === "number"
+          ? rawY
+          : typeof rawY === "string"
+          ? Number(rawY)
+          : NaN;
+
+      return { x, y };
+    })
+    .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
+    .sort((a, b) => a.x - b.x);
+
+  return out;
+}
+
 
 export default function Stats() {
   const { sessions } = useStats();
@@ -104,8 +183,12 @@ export default function Stats() {
   const lessonAgg = useMemo(() => computeAggregates(lessonSessions), [lessonSessions]);
   const gameAgg = useMemo(() => computeAggregates(gameSessions), [gameSessions]);
 
-  const wpmSeries = useMemo(() => groupDailySeries(sessions ?? [], "wpm"), [sessions]);
-  const accSeries = useMemo(() => groupDailySeries(sessions ?? [], "accuracy"), [sessions]);
+  const wpmSeriesRaw = useMemo(() => groupDailySeries(sessions ?? [], "wpm"), [sessions]);
+  const accSeriesRaw = useMemo(() => groupDailySeries(sessions ?? [], "accuracy"), [sessions]);
+
+  const wpmSeries = useMemo(() => normalizeSeries(wpmSeriesRaw), [wpmSeriesRaw]);
+  const accSeries = useMemo(() => normalizeSeries(accSeriesRaw), [accSeriesRaw]);
+
 
   return (
     <div
@@ -138,10 +221,22 @@ export default function Stats() {
 
       <section className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
         <div className="col-span-2">
-          <ChartPlaceholder title="WPM Progression Over Time" color={NEO_BLUE} height="h-96" />
+            <LineChartMini
+            title="WPM Progression Over Time"
+            color={NEO_BLUE}
+            series={wpmSeries}
+            height={320}
+            />
         </div>
-        <ChartPlaceholder title="Accuracy Trends" color={NEO_PINK} height="h-96" />
-      </section>
+
+        <LineChartMini
+            title="Accuracy Trends"
+            color={NEO_PINK}
+            series={accSeries}
+            height={320}
+        />
+        </section>
+
 
       <section className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatMetricCard
@@ -167,19 +262,12 @@ export default function Stats() {
       </section>
 
       <pre className="max-w-6xl mx-auto mt-10 text-xs text-gray-400 overflow-auto">
-        {JSON.stringify(
-          {
-            allAgg,
-            lessonAgg,
-            gameAgg,
-            wpmSeries,
-            accSeries,
-            last5: (sessions ?? []).slice(0, 5),
-          },
-          null,
-          2
-        )}
-      </pre>
+  {JSON.stringify(
+    { wpmSeriesRaw, accSeriesRaw, wpmSeries, accSeries },
+    null,
+    2
+  )}
+</pre>
     </div>
   );
 }
