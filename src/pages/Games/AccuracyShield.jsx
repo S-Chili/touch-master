@@ -1,13 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NeonKeyboard from "../../components/NeonKeyboard.jsx";
+import { addSession } from "../../data/statsStore";
+import { emitStatsUpdate } from "../../data/statsEvents";
 
-const DEFAULT_ALLOWED = ["Q","W","E","R","T","Y","U","I","O","P"]; 
-const TARGET_CORRECT = 60;          
-const BASE_TIME_SEC = 45;           
-const MISTAKE_PENALTY_SEC = 2;      
-const SCORE_PENALTY = 8;            
-const SCORE_PER_CORRECT = 5;        
+const DEFAULT_ALLOWED = ["Q","W","E","R","T","Y","U","I","O","P"];
+const TARGET_CORRECT = 60;
+const BASE_TIME_SEC = 45;
+const MISTAKE_PENALTY_SEC = 2;
+const SCORE_PENALTY = 8;
+const SCORE_PER_CORRECT = 5;
 
 function fmtTime(ms) {
   const s = Math.max(0, Math.ceil(ms / 1000));
@@ -36,33 +38,41 @@ export default function AccuracyShield() {
   const [penaltyMs, setPenaltyMs] = useState(0);
   const [now, setNow] = useState(0);
   const [startAtMs, setStartAtMs] = useState(null);
+  const [endAtMs, setEndAtMs] = useState(null);
+
+
   const MIN_WPM_TIME_MS = 3000;
 
+  // ✅ щоб не записати сесію двічі
+  const sessionSavedRef = useRef(false);
 
   const timeLeftMs = useMemo(() => {
-  if (!started || !startAtMs) return BASE_TIME_SEC * 1000;
-  const elapsed = now - startAtMs;
-  const total = BASE_TIME_SEC * 1000 + penaltyMs;
-  return total - elapsed;
-}, [started, now, penaltyMs, startAtMs]);
-
+    if (!started || !startAtMs) return BASE_TIME_SEC * 1000;
+    const elapsed = now - startAtMs;
+    const total = BASE_TIME_SEC * 1000 + penaltyMs;
+    return total - elapsed;
+  }, [started, now, penaltyMs, startAtMs]);
 
   const accuracy = useMemo(() => {
     const total = correct + mistakes;
     return total === 0 ? 100 : Math.round((correct / total) * 100);
   }, [correct, mistakes]);
 
+  const elapsedMs = useMemo(() => {
+  if (!startAtMs) return 0;
+  return Math.max(0, now - startAtMs);
+}, [now, startAtMs]);
+
+
+
   const wpm = useMemo(() => {
-  if (!started || !startAtMs) return 0;
+    if (!startAtMs) return 0;
+    if (elapsedMs < MIN_WPM_TIME_MS) return 0;
 
-  const elapsedMs = now - startAtMs;
-  if (elapsedMs < MIN_WPM_TIME_MS) return 0;
-
-  const minutes = elapsedMs / 60000;
-  return Math.round((correct / 5) / minutes);
-}, [started, now, correct, startAtMs]);
-
-
+    const minutes = elapsedMs / 60000;
+    if (minutes <= 0) return 0;
+    return Math.round((correct / 5) / minutes);
+  }, [startAtMs, elapsedMs, correct]);
 
   const highlightKeys = currentKey ? [currentKey.toLowerCase()] : [];
 
@@ -72,51 +82,59 @@ export default function AccuracyShield() {
   }, [allowedKeys]);
 
   const finishGame = useCallback(() => {
+  const ts = Date.now();
+
   setFinished((prev) => {
     if (prev) return prev;
     return true;
   });
+
+  setEndAtMs(ts);
   setStarted(false);
 }, []);
 
 
   const resetGame = useCallback(() => {
-    setStarted(false);
-    setFinished(false);
-    setCurrentKey(null);
-    setCorrect(0);
-    setMistakes(0);
-    setScore(0);
-    setPenaltyMs(0);
-    setStartAtMs(null);
-    setNow(0);
-  }, []);
+  setStarted(false);
+  setFinished(false);
+  setCurrentKey(null);
+  setCorrect(0);
+  setMistakes(0);
+  setScore(0);
+  setPenaltyMs(0);
+  setStartAtMs(null);
+  setEndAtMs(null);
+  setNow(0);
+  sessionSavedRef.current = false;
+}, []);
 
- useEffect(() => {
-  if (!started || finished) return;
 
-  const t = window.setInterval(() => {
-    const ts = Date.now();
-    setNow(ts);
+  // ticker + finish checks (всередині interval)
+  useEffect(() => {
+    if (!started || finished) return;
 
-    if (startAtMs) {
-      const elapsed = ts - startAtMs;
-      const total = BASE_TIME_SEC * 1000 + penaltyMs;
-      if (total - elapsed <= 0) {
-        finishGame();
-        return;
+    const t = window.setInterval(() => {
+      const ts = Date.now();
+      setNow(ts);
+
+      if (startAtMs) {
+        const elapsed = ts - startAtMs;
+        const total = BASE_TIME_SEC * 1000 + penaltyMs;
+        if (total - elapsed <= 0) {
+          finishGame();
+          return;
+        }
       }
-    }
 
-    if (correct >= TARGET_CORRECT) {
-      finishGame();
-    }
-  }, 100);
+      if (correct >= TARGET_CORRECT) {
+        finishGame();
+      }
+    }, 100);
 
-  return () => window.clearInterval(t);
-}, [started, finished, startAtMs, penaltyMs, correct, finishGame]);
+    return () => window.clearInterval(t);
+  }, [started, finished, startAtMs, penaltyMs, correct, finishGame]);
 
-    
+  // init key after start
   useEffect(() => {
     if (!started || finished) return;
     if (!currentKey) {
@@ -134,8 +152,9 @@ export default function AccuracyShield() {
     if (!started) {
       setStarted(true);
       const ts = Date.now();
-        setStartAtMs(ts);
-        setNow(ts);
+      setStartAtMs(ts);
+      setNow(ts);
+
       if (!currentKey) {
         const k = allowedKeys[Math.floor(Math.random() * allowedKeys.length)];
         setCurrentKey(k);
@@ -165,6 +184,35 @@ export default function AccuracyShield() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onKeyDown]);
+
+  // ✅ запис у статистику коли гра завершилась
+useEffect(() => {
+  if (!finished) return;
+  if (!startAtMs) return;
+  if (sessionSavedRef.current) return;
+
+  sessionSavedRef.current = true;
+
+  const endedAt = endAtMs ?? Date.now();
+  const durationMs = Math.max(0, endedAt - startAtMs);
+
+   addSession({
+    mode: "game",                 // <-- критично, інакше normalize зробить lesson:contentReference[oaicite:3]{index=3}
+    id: "accuracy_shield",
+    wpm,
+    accuracy,
+    timeMs: elapsedMs,
+    correct,
+     mistakes,
+     endedAt,
+    durationMs,
+    score,
+    createdAt: Date.now(),
+  });
+
+  emitStatsUpdate(); // <-- без цього useStats не оновиться:contentReference[oaicite:4]{index=4}:contentReference[oaicite:5]{index=5}
+}, [finished, wpm, accuracy, elapsedMs, correct, mistakes, score, startAtMs, endAtMs]);
+
 
   return (
     <div className="min-h-screen p-10 text-white bg-black font-mono">
@@ -262,9 +310,7 @@ export default function AccuracyShield() {
 
               <div className="flex flex-col md:flex-row gap-3 justify-end">
                 <button
-                  onClick={() => {
-                    resetGame();
-                  }}
+                  onClick={resetGame}
                   className="px-6 py-3 rounded-xl border border-pink-500/60 text-pink-300
                              hover:bg-pink-500/10 transition-all shadow-[0_0_18px_rgba(255,0,230,0.18)]"
                 >

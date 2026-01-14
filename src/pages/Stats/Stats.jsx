@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import useStats from "../../hooks/useStats";
-import { computeAggregates, groupDailySeries } from "../../data/statsStore";
+import { computeAggregates, seriesBySession } from "../../data/statsStore";
 
 const NEO_BLUE = "#00eaff";
 const NEO_PINK = "#ff00e6";
@@ -135,35 +135,35 @@ function LineChartMini({ title, color, series, height = 320 }) {
 }
 
 
-function normalizeSeries(raw) {
-  const arr = Array.isArray(raw) ? raw : [];
+// function normalizeSeries(raw) {
+//   const arr = Array.isArray(raw) ? raw : [];
 
-  const out = arr
-    .map((p) => {
-      const rawX = p?.x ?? p?.ts ?? p?.time ?? p?.date;
-      const rawY = p?.y ?? p?.value ?? p?.avg ?? p?.wpm ?? p?.accuracy;
+//   const out = arr
+//     .map((p) => {
+//       const rawX = p?.x ?? p?.ts ?? p?.time ?? p?.date;
+//       const rawY = p?.y ?? p?.value ?? p?.avg ?? p?.wpm ?? p?.accuracy;
 
-      let x =
-        typeof rawX === "number"
-          ? rawX
-          : typeof rawX === "string"
-          ? Date.parse(rawX)
-          : NaN;
+//       let x =
+//         typeof rawX === "number"
+//           ? rawX
+//           : typeof rawX === "string"
+//           ? Date.parse(rawX)
+//           : NaN;
 
-      let y =
-        typeof rawY === "number"
-          ? rawY
-          : typeof rawY === "string"
-          ? Number(rawY)
-          : NaN;
+//       let y =
+//         typeof rawY === "number"
+//           ? rawY
+//           : typeof rawY === "string"
+//           ? Number(rawY)
+//           : NaN;
 
-      return { x, y };
-    })
-    .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
-    .sort((a, b) => a.x - b.x);
+//       return { x, y };
+//     })
+//     .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
+//     .sort((a, b) => a.x - b.x);
 
-  return out;
-}
+//   return out;
+// }
 
 
 export default function Stats() {
@@ -183,11 +183,10 @@ export default function Stats() {
   const lessonAgg = useMemo(() => computeAggregates(lessonSessions), [lessonSessions]);
   const gameAgg = useMemo(() => computeAggregates(gameSessions), [gameSessions]);
 
-  const wpmSeriesRaw = useMemo(() => groupDailySeries(sessions ?? [], "wpm"), [sessions]);
-  const accSeriesRaw = useMemo(() => groupDailySeries(sessions ?? [], "accuracy"), [sessions]);
+    
+    const wpmSeries = useMemo(() => seriesBySession(sessions ?? [], "wpm"), [sessions]);
+    const accSeries = useMemo(() => seriesBySession(sessions ?? [], "accuracy"), [sessions]);
 
-  const wpmSeries = useMemo(() => normalizeSeries(wpmSeriesRaw), [wpmSeriesRaw]);
-  const accSeries = useMemo(() => normalizeSeries(accSeriesRaw), [accSeriesRaw]);
 
 
   return (
@@ -262,12 +261,12 @@ export default function Stats() {
       </section>
 
       <pre className="max-w-6xl mx-auto mt-10 text-xs text-gray-400 overflow-auto">
-  {JSON.stringify(
-    { wpmSeriesRaw, accSeriesRaw, wpmSeries, accSeries },
-    null,
-    2
-  )}
-</pre>
+        {JSON.stringify(
+            { wpmSeries, accSeries },
+            null,
+            2
+        )}
+      </pre>
     </div>
   );
 }

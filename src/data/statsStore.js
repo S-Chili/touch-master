@@ -104,3 +104,11 @@ export function groupDailySeries(sessions, field = "wpm") {
 
   return out;
 }
+
+export function seriesBySession(sessions, field = "wpm") {
+  const list = Array.isArray(sessions) ? sessions : [];
+  return list
+    .map((s) => ({ x: s.createdAt, y: safeNumber(s[field], 0) }))
+    .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
+    .sort((a, b) => a.x - b.x);
+}
