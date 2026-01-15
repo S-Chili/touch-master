@@ -77,11 +77,11 @@ const Lessons = () => {
     { number: 2, title: "E and I Keys" },
     { number: 3, title: "T, R, and O Keys" },
     { number: 4, title: "W and P Keys" },
-    { number: 5, title: "Shift and Capitals" },
-    { number: 6, title: "Numbers (Top Row)" },
-    { number: 7, title: "Symbols (Basic)" },
-    { number: 8, title: "Punctuation" },
-    { number: 9, title: "Advanced Symbols" },
+    { number: 5, title: "Bottom Row" },
+    { number: 6, title: "Punctuation Basics" },
+    { number: 7, title: "Capitalization & Shift Keys" },
+    { number: 8, title: "Number Row (Digits)" },
+    { number: 9, title: "Special Symbols" },
     { number: 10, title: "Final Test" },
   ];
 

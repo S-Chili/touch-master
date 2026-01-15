@@ -1,14 +1,25 @@
-// src/pages/Dashboard.jsx
-import React from "react";
+import React, { useMemo } from "react";
 import { useSettings } from "../../context/useSettings";
 import NeonKeyboard from "../../components/NeonKeyboard.jsx";
+
+import useStats from "../../hooks/useStats";
+import { computeAggregates, groupDailySeries } from "../../data/statsStore";
 
 const NEO_BLUE = "#00eaff";
 const NEO_PINK = "#ff00e6";
 const NEO_PURPLE = "#8a2be2";
 
 const IconChart = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={NEO_PINK} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={NEO_PINK}
+    strokeWidth="1.6"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polyline points="3 17 8 12 13 15 19 8"></polyline>
   </svg>
 );
@@ -66,39 +77,188 @@ const SmallButton = ({ label, color = "cyan" }) => {
   );
 };
 
-const StatsPanel = ({ isUK }) => (
-  <div className="w-full rounded-xl p-4 bg-black/60 border border-cyan-600/30 backdrop-blur shadow-[0_0_20px_rgba(0,234,255,0.18)] mb-6">
-    <div className="flex items-center justify-between mb-3">
-      <div className="text-xs text-pink-400 font-bold tracking-wider">{isUK ? "ВІТАЄМО" : "WELCOME BACK"}</div>
-      <MiniIcon>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={NEO_BLUE} strokeWidth="1.5"><circle cx="12" cy="12" r="4" /></svg>
-      </MiniIcon>
-    </div>
+function toPoints(series, width, height, pad = 10) {
+  if (!series?.length) return "";
 
-    <div className="text-sm text-cyan-200 space-y-1">
-      <div className="flex justify-between"><span className="text-gray-300">Level</span><span className="font-semibold">7</span></div>
-      <div className="flex justify-between"><span className="text-gray-300">Accuracy</span><span className="font-semibold">92%</span></div>
-      <div className="flex justify-between"><span className="text-gray-300">Speed</span><span className="font-semibold">52 WPM</span></div>
+  const ys = series.map((p) => Number(p.y)).filter((n) => Number.isFinite(n));
+  if (!ys.length) return "";
+
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const dy = maxY - minY || 1;
+
+  const len = series.length;
+  const dx = (width - pad * 2) / Math.max(1, len - 1);
+
+  return series
+    .map((p, i) => {
+      const yVal = Number(p.y);
+      const x = pad + i * dx;
+      const y = height - pad - ((yVal - minY) / dy) * (height - pad * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+}
+
+const MiniLineChart = ({ series, stroke = NEO_BLUE }) => {
+  const w = 240;
+  const h = 90;
+
+  const safeSeries = useMemo(() => {
+    const arr = Array.isArray(series) ? series : [];
+    return arr
+      .map((p) => ({ x: p.x, y: Number(p.y) }))
+      .filter((p) => Number.isFinite(p.y));
+  }, [series]);
+
+  const points = useMemo(() => toPoints(safeSeries, w, h), [safeSeries]);
+
+  if (!safeSeries.length || !points) {
+    return (
+      <div className="w-full h-24 rounded bg-linear-to-r from-cyan-500/6 to-pink-500/6 flex items-center justify-center text-xs text-gray-500">
+        No data yet
+      </div>
+    );
+  }
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-24">
+      <polyline
+        fill="none"
+        stroke={stroke}
+        strokeWidth="3"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        points={points}
+      />
+      {/* last dot */}
+      <circle
+        cx={points.split(" ").slice(-1)[0].split(",")[0]}
+        cy={points.split(" ").slice(-1)[0].split(",")[1]}
+        r="4"
+        fill={stroke}
+      />
+    </svg>
+  );
+};
+
+const StatsPanel = ({ isUK, allAgg, lessonAgg, gameAgg }) => {
+  const level = Math.max(1, Math.min(99, (lessonAgg?.totalRuns ?? 0) + 1));
+
+  return (
+    <div className="w-full rounded-xl p-4 bg-black/60 border border-cyan-600/30 backdrop-blur shadow-[0_0_20px_rgba(0,234,255,0.18)] mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-xs text-pink-400 font-bold tracking-wider">
+          {isUK ? "ВІТАЄМО" : "WELCOME BACK"}
+        </div>
+        <MiniIcon>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={NEO_BLUE}
+            strokeWidth="1.5"
+          >
+            <circle cx="12" cy="12" r="4" />
+          </svg>
+        </MiniIcon>
+      </div>
+
+      <div className="text-sm text-cyan-200 space-y-1">
+        <div className="flex justify-between">
+          <span className="text-gray-300">Level</span>
+          <span className="font-semibold">{level}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="text-gray-300">{isUK ? "Точність" : "Accuracy"}</span>
+          <span className="font-semibold">
+            {Number.isFinite(allAgg?.avgAccuracy) ? `${allAgg.avgAccuracy}%` : "—"}
+          </span>
+        </div>
+
+        <div className="flex justify-between">
+          <span className="text-gray-300">{isUK ? "Швидкість" : "Speed"}</span>
+          <span className="font-semibold">
+            {Number.isFinite(allAgg?.avgWpm) ? `${allAgg.avgWpm} WPM` : "—"}
+          </span>
+        </div>
+
+        <div className="pt-2 mt-2 border-t border-cyan-500/15 text-xs text-gray-400">
+          <div className="flex justify-between">
+            <span>{isUK ? "Забіги" : "Runs"}</span>
+            <span className="text-gray-300">
+              {lessonAgg?.totalRuns ?? 0} L / {gameAgg?.totalRuns ?? 0} G
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span>{isUK ? "Кращий WPM" : "Best WPM"}</span>
+            <span className="text-gray-300">{allAgg?.bestWpm ?? 0}</span>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Dashboard = () => {
   const { language } = useSettings();
   const isUK = language === "uk";
 
+  const { sessions } = useStats();
+
+  const safeSessions = useMemo(() => (Array.isArray(sessions) ? sessions : []), [sessions]);
+
+  const lessonSessions = useMemo(
+    () => safeSessions.filter((s) => s.mode === "lesson"),
+    [safeSessions]
+  );
+
+  const gameSessions = useMemo(
+    () => safeSessions.filter((s) => s.mode === "game"),
+    [safeSessions]
+  );
+
+  const allAgg = useMemo(() => computeAggregates(safeSessions), [safeSessions]);
+  const lessonAgg = useMemo(() => computeAggregates(lessonSessions), [lessonSessions]);
+  const gameAgg = useMemo(() => computeAggregates(gameSessions), [gameSessions]);
+
+  const wpmSeries = useMemo(() => {
+    const s = groupDailySeries(safeSessions, "wpm") ?? [];
+    return s.slice(-14);
+  }, [safeSessions]);
+
+  const streak = useMemo(() => {
+    const days = new Set(
+      safeSessions
+        .map((s) => s.createdAt)
+        .filter(Boolean)
+        .map((ts) => new Date(ts).toISOString().slice(0, 10))
+    );
+
+    if (!days.size) return 0;
+
+    let count = 0;
+    let d = new Date();
+    for (let i = 0; i < 365; i++) {
+      const key = d.toISOString().slice(0, 10);
+      if (!days.has(key)) break;
+      count++;
+      d.setDate(d.getDate() - 1);
+    }
+    return count;
+  }, [safeSessions]);
+
   return (
     <div className="relative w-full min-h-screen text-cyan-300 font-mono px-2">
-
       <div className="absolute inset-0 opacity-6 bg-[linear-gradient(90deg,rgba(0,255,255,0.02)_1px,transparent_1px),linear-gradient(rgba(255,0,200,0.02)_1px,transparent_1px)] bg-size-[80px_80px] pointer-events-none"></div>
 
       <div className="max-w-7xl mx-auto pt-8 flex flex-col lg:flex-row gap-6">
-
         <div className="w-full lg:w-[80%] lg:shrink-0">
-          
           <section className="bg-black/40 border border-cyan-700/20 rounded-xl p-6 backdrop-blur shadow-[0_0_30px_rgba(0,234,255,0.06)] mb-6">
             <div className="mb-6">
-              <NeonKeyboard showLabels={false}/>
+              <NeonKeyboard showLabels={false} />
             </div>
 
             <div className="flex items-center justify-between text-sm text-gray-300 mb-4">
@@ -124,26 +284,49 @@ const Dashboard = () => {
         </div>
 
         <div className="w-full lg:w-[20%] lg:shrink-0">
-          
-          <StatsPanel isUK={isUK} />
+          <StatsPanel isUK={isUK} allAgg={allAgg} lessonAgg={lessonAgg} gameAgg={gameAgg} />
 
           <section className="grid grid-cols-1 gap-6 mb-12">
-            
             <div className="bg-black/40 border border-cyan-700/20 rounded-xl p-4 shadow-[0_0_18px_rgba(0,234,255,0.04)]">
-              <h3 className="text-cyan-300 text-lg mb-3 flex items-center gap-2"><IconChart /> Performance</h3>
-              <div className="w-full h-36 bg-linear-to-r from-cyan-500/6 to-pink-500/6 rounded"></div>
+              <h3 className="text-cyan-300 text-lg mb-3 flex items-center gap-2">
+                <IconChart /> Performance
+                <span className="ml-auto text-[10px] text-gray-500">
+                  avg {allAgg?.avgWpm ?? 0} wpm
+                </span>
+              </h3>
+
+              <div className="w-full rounded bg-linear-to-r from-cyan-500/6 to-pink-500/6">
+                <MiniLineChart series={wpmSeries} stroke={NEO_BLUE} />
+              </div>
+
+              <div className="mt-2 text-[11px] text-gray-500 flex justify-between">
+                <span>last 14 days</span>
+                <span>best: {allAgg?.bestWpm ?? 0}</span>
+              </div>
             </div>
 
             <div className="bg-black/40 border border-cyan-700/20 rounded-xl p-4 shadow-[0_0_18px_rgba(0,234,255,0.04)]">
               <h4 className="text-pink-400 text-sm mb-2">Streak</h4>
-              <div className="text-white text-2xl font-bold">4</div>
-              <div className="mt-4 text-sm text-gray-400">Consistency +10</div>
+              <div className="text-white text-2xl font-bold">{streak}</div>
+              <div className="mt-4 text-sm text-gray-400">Consistency +{Math.min(10, streak * 2)}</div>
+            </div>
+
+            <div className="bg-black/40 border border-cyan-700/20 rounded-xl p-4 shadow-[0_0_18px_rgba(0,234,255,0.04)]">
+              <h4 className="text-purple-300 text-sm mb-2">Split</h4>
+              <div className="text-xs text-gray-400 space-y-1">
+                <div className="flex justify-between">
+                  <span>Lessons avg</span>
+                  <span className="text-gray-300">{lessonAgg?.avgWpm ?? 0} wpm</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Games avg</span>
+                  <span className="text-gray-300">{gameAgg?.avgWpm ?? 0} wpm</span>
+                </div>
+              </div>
             </div>
           </section>
         </div>
-
-      </div> 
-
+      </div>
     </div>
   );
 };

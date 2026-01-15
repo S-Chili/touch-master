@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NeonKeyboard from "../../components/NeonKeyboard.jsx";
+import { addSession } from "../../data/statsStore";
+import { emitStatsUpdate } from "../../data/statsEvents";
 
 const DEFAULT_ALLOWED = [
-     "Q","W","E","R","T","Y","U","I","O","P",
-
+  "Q","W","E","R","T","Y","U","I","O","P",
   "A","S","D","F","G","H","J","K","L",
-
   "Z","X","C","V","B","N","M",
 ];
 
@@ -26,21 +26,20 @@ export default function RaceAgainstTime() {
     [allowedKeys]
   );
 
-  // game state
-  const [phase, setPhase] = useState("idle");
+  const [phase, setPhase] = useState("idle"); 
   const [timeLeft, setTimeLeft] = useState(duration);
 
   const [currentKey, setCurrentKey] = useState(null);
   const [errorFlash, setErrorFlash] = useState(false);
 
-  // stats
-  const [startTime, setStartTime] = useState(null);
   const [correct, setCorrect] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [total, setTotal] = useState(0);
 
   const timerRef = useRef(null);
   const flashRef = useRef(null);
+
+  const savedRef = useRef(false);
 
   const highlightKeys = currentKey ? [currentKey.toLowerCase()] : [];
 
@@ -53,10 +52,11 @@ export default function RaceAgainstTime() {
       setCurrentKey(null);
       setErrorFlash(false);
 
-      setStartTime(null);
       setCorrect(0);
       setMistakes(0);
       setTotal(0);
+
+      savedRef.current = false;
 
       if (timerRef.current) window.clearInterval(timerRef.current);
       if (flashRef.current) window.clearTimeout(flashRef.current);
@@ -74,12 +74,10 @@ export default function RaceAgainstTime() {
   const start = useCallback(() => {
     reset(duration);
     setPhase("running");
-    setStartTime(Date.now());
     setTimeLeft(duration);
 
     const t = window.setTimeout(() => pickNextKey(), 0);
 
-    // countdown
     timerRef.current = window.setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -127,16 +125,36 @@ export default function RaceAgainstTime() {
   }, [onKeyDown]);
 
   const elapsedMs = useMemo(() => {
-    if (!startTime) return 0;
-    // eslint-disable-next-line react-hooks/purity
-    const end = phase === "finished" ? startTime + duration * 1000 : Date.now();
-    return Math.max(0, end - startTime);
-  }, [duration, phase, startTime]);
+    if (phase === "idle") return 0;
+    const elapsedSec = Math.max(0, duration - timeLeft);
+    const finalSec = phase === "finished" ? duration : elapsedSec;
+    return finalSec * 1000;
+  }, [duration, timeLeft, phase]);
 
   const minutes = elapsedMs / 60000;
   const wpm = minutes > 0 ? Math.round((correct / 5) / minutes) : 0;
-  const accuracy =
-    total > 0 ? Math.round((correct / total) * 100) : 100;
+
+  const accuracy = total > 0 ? Math.round((correct / total) * 100) : 100;
+
+  useEffect(() => {
+    if (phase !== "finished") return;
+    if (savedRef.current) return;
+    savedRef.current = true;
+
+    addSession({
+      mode: "game",
+      id: "race_against_time",
+      wpm,
+      accuracy,
+      timeMs: duration * 1000,
+      correct,
+      mistakes,
+      totalKeys: total,
+      createdAt: Date.now(),
+    });
+
+    emitStatsUpdate();
+  }, [phase, wpm, accuracy, duration, correct, mistakes, total]);
 
   useEffect(() => {
     return () => {
@@ -162,9 +180,7 @@ export default function RaceAgainstTime() {
           <div className="text-pink-400 text-3xl font-extrabold drop-shadow-[0_0_14px_rgba(255,0,230,0.45)]">
             TIME’S UP
           </div>
-          <div className="text-gray-300 mt-2">
-            Nice run. Here are your results:
-          </div>
+          <div className="text-gray-300 mt-2">Nice run. Here are your results:</div>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-8">
@@ -221,12 +237,8 @@ export default function RaceAgainstTime() {
   return (
     <div className="min-h-screen p-10 text-white bg-black font-mono">
       <div className="max-w-4xl mx-auto mb-10">
-        <div className="text-cyan-300 text-sm tracking-widest opacity-80">
-          GAME MODE
-        </div>
-        <h1 className="text-4xl font-extrabold text-white mt-2">
-          RACE AGAINST TIME
-        </h1>
+        <div className="text-cyan-300 text-sm tracking-widest opacity-80">GAME MODE</div>
+        <h1 className="text-4xl font-extrabold text-white mt-2">RACE AGAINST TIME</h1>
         <p className="text-gray-300 mt-3 max-w-2xl">
           Test your raw WPM limit. Type continuously until the timer runs out.
         </p>
@@ -347,10 +359,8 @@ export default function RaceAgainstTime() {
       )}
 
       {phase === "finished" && (
-        <ResultModal
-          onAgain={() => start()}
-          onExit={() => navigate("/games")}
-        />
+        // eslint-disable-next-line react-hooks/static-components
+        <ResultModal onAgain={() => start()} onExit={() => navigate("/games")} />
       )}
     </div>
   );

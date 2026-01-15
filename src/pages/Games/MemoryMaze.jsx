@@ -1,4 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { addSession } from "../../data/statsStore";
+import { emitStatsUpdate } from "../../data/statsEvents";
 import { useNavigate } from "react-router-dom";
 import NeonKeyboard from "../../components/NeonKeyboard.jsx";
 
@@ -77,6 +79,30 @@ export default function MemoryMaze() {
     if (minutes <= 0) return 0;
     return Math.round(((totalKeys - mistakes) / 5) / minutes);
   }, [elapsedMs, startAtMs, totalKeys, mistakes]);
+    
+    const savedRef = useRef(false);
+
+useEffect(() => {
+  if (!finished) return;
+  if (savedRef.current) return;
+  savedRef.current = true;
+
+  addSession({
+    mode: "game",
+    id: "memory_maze",
+    wpm,
+    accuracy,
+    timeMs: elapsedMs,
+    score,
+    correct: round >= ROUNDS_TO_WIN ? ROUNDS_TO_WIN : round, 
+    mistakes,
+    totalKeys,
+    createdAt: Date.now(),
+  });
+
+  emitStatsUpdate();
+}, [finished, wpm, accuracy, elapsedMs, score, round, mistakes, totalKeys]);
+
 
   const nextExpected = useMemo(() => {
     if (phase !== "type") return null;
@@ -235,7 +261,9 @@ export default function MemoryMaze() {
     setStarted(false);
     setFinished(false);
     setStartAtMs(null);
-    setEndAtMs(null);
+      setEndAtMs(null);
+      savedRef.current = false;
+
     setNow(0);
 
     setRound(1);
