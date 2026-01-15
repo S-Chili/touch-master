@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import { useSettings } from "../../context/useSettings";
 import NeonKeyboard from "../../components/NeonKeyboard.jsx";
-
 import useStats from "../../hooks/useStats";
 import { computeAggregates, groupDailySeries } from "../../data/statsStore";
 
@@ -100,6 +99,28 @@ function toPoints(series, width, height, pad = 10) {
     .join(" ");
 }
 
+const Segmented = ({ value, onChange, options }) => (
+  <div className="flex rounded-xl overflow-hidden border border-cyan-500/25 bg-black/40">
+    {options.map((opt) => {
+      const active = value === opt.value;
+      return (
+        <button
+          key={opt.value}
+          onClick={() => onChange(opt.value)}
+          className={`
+            px-3 py-2 text-xs font-bold tracking-widest uppercase
+            transition-all
+            ${active ? "bg-cyan-500/15 text-cyan-200" : "text-gray-400 hover:bg-white/5"}
+          `}
+        >
+          {opt.label}
+        </button>
+      );
+    })}
+  </div>
+);
+
+
 const MiniLineChart = ({ series, stroke = NEO_BLUE }) => {
   const w = 240;
   const h = 90;
@@ -142,15 +163,58 @@ const MiniLineChart = ({ series, stroke = NEO_BLUE }) => {
   );
 };
 
-const StatsPanel = ({ isUK, allAgg, lessonAgg, gameAgg }) => {
+const StatsPanel = ({
+  isUK,
+  allAgg,
+  lessonAgg,
+  gameAgg,
+  language,
+  setLanguage,
+  layout,
+  setLayout,
+}) => {
   const level = Math.max(1, Math.min(99, (lessonAgg?.totalRuns ?? 0) + 1));
 
   return (
     <div className="w-full rounded-xl p-4 bg-black/60 border border-cyan-600/30 backdrop-blur shadow-[0_0_20px_rgba(0,234,255,0.18)] mb-6">
+
+      <div className="mb-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-gray-400">
+            {isUK ? "Мова інтерфейсу" : "UI language"}
+          </div>
+
+          <Segmented
+            value={language}
+            onChange={setLanguage}
+            options={[
+              { value: "uk", label: "UA" },
+              { value: "en", label: "EN" },
+            ]}
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-gray-400">
+            {isUK ? "Розкладка" : "Keyboard layout"}
+          </div>
+
+          <Segmented
+            value={layout}
+            onChange={setLayout}
+            options={[
+              { value: "en", label: "EN" },
+              { value: "uk", label: "UK" },
+            ]}
+          />
+        </div>
+      </div>
+
       <div className="flex items-center justify-between mb-3">
         <div className="text-xs text-pink-400 font-bold tracking-wider">
           {isUK ? "ВІТАЄМО" : "WELCOME BACK"}
         </div>
+
         <MiniIcon>
           <svg
             width="12"
@@ -192,6 +256,7 @@ const StatsPanel = ({ isUK, allAgg, lessonAgg, gameAgg }) => {
               {lessonAgg?.totalRuns ?? 0} L / {gameAgg?.totalRuns ?? 0} G
             </span>
           </div>
+
           <div className="flex justify-between">
             <span>{isUK ? "Кращий WPM" : "Best WPM"}</span>
             <span className="text-gray-300">{allAgg?.bestWpm ?? 0}</span>
@@ -202,8 +267,9 @@ const StatsPanel = ({ isUK, allAgg, lessonAgg, gameAgg }) => {
   );
 };
 
+
 const Dashboard = () => {
-  const { language } = useSettings();
+  const { language, setLanguage, layout, setLayout } = useSettings();
   const isUK = language === "uk";
 
   const { sessions } = useStats();
@@ -224,6 +290,7 @@ const Dashboard = () => {
   const lessonAgg = useMemo(() => computeAggregates(lessonSessions), [lessonSessions]);
   const gameAgg = useMemo(() => computeAggregates(gameSessions), [gameSessions]);
 
+  
   const wpmSeries = useMemo(() => {
     const s = groupDailySeries(safeSessions, "wpm") ?? [];
     return s.slice(-14);
@@ -258,7 +325,7 @@ const Dashboard = () => {
         <div className="w-full lg:w-[80%] lg:shrink-0">
           <section className="bg-black/40 border border-cyan-700/20 rounded-xl p-6 backdrop-blur shadow-[0_0_30px_rgba(0,234,255,0.06)] mb-6">
             <div className="mb-6">
-              <NeonKeyboard showLabels={false} />
+              <NeonKeyboard showLabels={false} layout={layout} />
             </div>
 
             <div className="flex items-center justify-between text-sm text-gray-300 mb-4">
@@ -284,7 +351,16 @@ const Dashboard = () => {
         </div>
 
         <div className="w-full lg:w-[20%] lg:shrink-0">
-          <StatsPanel isUK={isUK} allAgg={allAgg} lessonAgg={lessonAgg} gameAgg={gameAgg} />
+          <StatsPanel
+            isUK={isUK}
+            allAgg={allAgg}
+            lessonAgg={lessonAgg}
+            gameAgg={gameAgg}
+            language={language}
+            setLanguage={setLanguage}
+            layout={layout}
+            setLayout={setLayout}
+          />
 
           <section className="grid grid-cols-1 gap-6 mb-12">
             <div className="bg-black/40 border border-cyan-700/20 rounded-xl p-4 shadow-[0_0_18px_rgba(0,234,255,0.04)]">
