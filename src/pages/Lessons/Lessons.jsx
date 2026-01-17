@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
+import lessons from "../../data/lessonData";
+import { useSettings } from "../../context/useSettings";
 
 const NEO_BLUE = "#00eaff";
 const NEO_PINK = "#ff00e6";
@@ -26,73 +28,81 @@ const IconBook = () => (
 
 const CurrentLessonCard = ({ lessonNumber, title }) => (
   <div
-    className={`
-      w-full max-w-lg mx-auto p-8 rounded-2xl border-2 
-      border-[${NEO_BLUE}] bg-black/50 shadow-[0_0_30px_rgba(0,234,255,0.4)]
-      text-center
-    `}
+    className="w-full max-w-lg mx-auto p-8 rounded-2xl border-2 bg-black/50 text-center"
+    style={{
+      borderColor: NEO_BLUE,
+      boxShadow: "0 0 30px rgba(0,234,255,0.4)",
+    }}
   >
     <div className="flex justify-center mb-4">
       <IconBook />
     </div>
+
     <div className="text-xl font-bold tracking-widest text-white mb-1">
       STEP {lessonNumber}
     </div>
+
     <h2
-      className={`text-4xl font-extrabold text-[${NEO_PINK}] drop-shadow-[0_0_5px_rgba(255,0,230,0.5)]`}
+      className="text-4xl font-extrabold drop-shadow-[0_0_5px_rgba(255,0,230,0.5)]"
+      style={{ color: NEO_PINK }}
     >
       {title}
     </h2>
   </div>
 );
 
-const LessonItem = ({ number, title }) => {
-  return (
-    <Link
-      to={`/lessons/${number}`}
-      className={`
-        p-4 rounded-xl border transition-all duration-300
-        flex items-center space-x-4
-        opacity-100 border-[${NEO_BLUE}] hover:border-white 
-        shadow-[0_0_15px_rgba(0,234,255,0.15)] 
-        hover:shadow-[0_0_25px_rgba(0,234,255,0.5)] 
-        cursor-pointer
-      `}
-    >
-      <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 border border-current text-white text-sm font-bold">
-        {number}
+const LessonItem = ({ number, title, isUK }) => (
+  <Link
+    to={`/lessons/${number}`}
+    className="p-4 rounded-xl border transition-all duration-300 flex items-center space-x-4 opacity-100 hover:border-white cursor-pointer bg-black/30"
+    style={{
+      borderColor: NEO_BLUE,
+      boxShadow: "0 0 15px rgba(0,234,255,0.15)",
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.boxShadow = "0 0 25px rgba(0,234,255,0.5)";
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.boxShadow = "0 0 15px rgba(0,234,255,0.15)";
+    }}
+  >
+    <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 border border-current text-white text-sm font-bold">
+      {number}
+    </div>
+
+    <div>
+      <div className="text-xs text-gray-400">
+        {isUK ? `Урок ${number}` : `Lesson ${number}`}
       </div>
+      <div className="text-md font-semibold text-white">{title}</div>
+    </div>
+  </Link>
+);
 
-      <div>
-        <div className="text-xs text-gray-400">Lesson {number}</div>
-        <div className="text-md font-semibold text-white">{title}</div>
-      </div>
-    </Link>
-  );
-};
+export default function Lessons() {
+  const { language } = useSettings();
+  const isUK = language === "uk";
 
-const Lessons = () => {
-  const lessonsData = [
-    { number: 1, title: "Home Row Mastery" },
-    { number: 2, title: "E and I Keys" },
-    { number: 3, title: "T, R, and O Keys" },
-    { number: 4, title: "W and P Keys" },
-    { number: 5, title: "Bottom Row" },
-    { number: 6, title: "Punctuation Basics" },
-    { number: 7, title: "Capitalization & Shift Keys" },
-    { number: 8, title: "Number Row (Digits)" },
-    { number: 9, title: "Special Symbols" },
-    { number: 10, title: "Final Test" },
-  ];
+  const list = useMemo(() => {
+    const arr = Array.isArray(lessons) ? lessons : [];
+    return arr
+      .map((l) => ({
+        number: l.id,
+        title: isUK ? l.titleUk : l.titleEn,
+        description: isUK ? l.descriptionUk : l.descriptionEn,
+      }))
+      .sort((a, b) => a.number - b.number);
+  }, [isUK]);
 
-  const currentLesson = lessonsData.find((l) => l.number === 4);
+  const currentLesson = list.find((l) => l.number === 4);
 
   return (
     <div
-      className={`relative w-full min-h-screen p-8 text-cyan-300 font-mono bg-[${NEO_DARK}]`}
+      className="relative w-full min-h-screen p-8 text-cyan-300 font-mono"
+      style={{ backgroundColor: NEO_DARK }}
     >
       <h1 className="text-4xl font-extrabold text-white mb-10 tracking-wider text-center">
-        TYPING PATH
+        {isUK ? "ШЛЯХ ДРУКУ" : "TYPING PATH"}
       </h1>
 
       <div className="flex flex-col items-center justify-center mb-10">
@@ -106,36 +116,42 @@ const Lessons = () => {
         {currentLesson && (
           <Link
             to={`/lessons/${currentLesson.number}`}
-            className={`
-              mt-8 px-10 py-3 text-xl font-bold rounded-lg
-              border-2 border-[${NEO_BLUE}] text-[${NEO_BLUE}] 
-              shadow-[0_0_15px_rgba(0,234,255,0.6)] 
-              hover:bg-[${NEO_BLUE}] hover:text-black 
-              transition-all duration-300 active:scale-95
-            `}
+            className="mt-8 px-10 py-3 text-xl font-bold rounded-lg border-2 transition-all duration-300 active:scale-95"
+            style={{
+              borderColor: NEO_BLUE,
+              color: NEO_BLUE,
+              boxShadow: "0 0 15px rgba(0,234,255,0.6)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = NEO_BLUE;
+              e.currentTarget.style.color = "#000";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "transparent";
+              e.currentTarget.style.color = NEO_BLUE;
+            }}
           >
-            Continue Training →
+            {isUK ? "Продовжити →" : "Continue Training →"}
           </Link>
         )}
       </div>
 
       <div className="max-w-4xl mx-auto">
         <h3 className="text-xl font-semibold text-gray-400 mb-6 border-b border-gray-700/50 pb-2">
-          Lesson Path Overview
+          {isUK ? "Огляд уроків" : "Lesson Path Overview"}
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {lessonsData.map((lesson) => (
+          {list.map((lesson) => (
             <LessonItem
               key={lesson.number}
               number={lesson.number}
               title={lesson.title}
+              isUK={isUK}
             />
           ))}
         </div>
       </div>
     </div>
   );
-};
-
-export default Lessons;
+}

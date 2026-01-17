@@ -1,32 +1,58 @@
-import React from "react";
-import LessonTemplate from "./LessonTemplate.jsx";
+import React, { useMemo } from "react";
 import LessonTrainer from "./LessonTrainer.jsx";
-
-// Lesson 2 — додаємо E та I (плюс опорні з home row)
-const BASE = ["F", "J", "D", "K", "S", "L", "A"];
-const NEW = ["E", "I"];
-const ALLOWED = [...new Set([...BASE, ...NEW])];
-
-const lesson2Config = {
-  id: 2,
-  title: "Lesson 2 — E and I Keys",
-  description: "Add E and I while keeping home row stable.",
-  allowedKeys: ALLOWED,
-  stages: [
-    ["F", "J"],                       // швидкий розігрів
-    ["E", "I"],                       // нові
-    ["E", "F", "I", "J"],             // зв’язки
-    ["D", "K", "E", "I"],             // ще комбо
-    ["S", "L", "E", "I"],             // розширення
-    ALLOWED,                          // все разом
-  ],
-  reps: 70,
-};
+import { useSettings } from "../../context/useSettings";
 
 export default function Lesson2() {
-  return (
-    <LessonTemplate title={lesson2Config.title} description={lesson2Config.description}>
-      <LessonTrainer config={lesson2Config} />
-    </LessonTemplate>
+  const { language } = useSettings();
+  const isUK = language === "uk";
+
+  const ui = useMemo(
+    () => ({
+      title: isUK ? "Урок 2 — Верхній ряд" : "Lesson 2 — Top Row",
+      tip: isUK
+        ? "Тренуйся не поспішаючи, зосереджуючись на точності."
+        : "Practice slowly, focusing on accuracy.",
+    }),
+    [isUK]
   );
+
+  const config = useMemo(
+    () => ({
+      id: 2,
+
+      allowedCodes: [
+        "KeyQ",
+        "KeyW",
+        "KeyE",
+        "KeyR",
+        "KeyT",
+        "KeyY",
+        "KeyU",
+        "KeyI",
+        "KeyO",
+        "KeyP",
+        "BracketLeft",
+        "BracketRight",
+      ],
+      
+      stages: [
+        ["KeyR", "KeyU", "KeyQ", "KeyP"],
+        ["KeyT", "KeyE", "KeyY", "KeyI", "BracketLeft"],
+        ["KeyQ", "KeyW", "KeyE", "KeyR", "KeyT", "KeyY", "KeyU", "KeyI", "KeyO", "KeyP", "BracketLeft", "BracketRight"],
+      ],
+
+      reps: 30,
+      ui,
+    }),
+    [ui]
+  );
+
+  return (
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-3xl font-extrabold text-white mb-2">{ui.title}</h1>
+        <p className="text-gray-400 mb-6">{ui.tip}</p>
+  
+        <LessonTrainer config={config} />
+      </div>
+    );
 }

@@ -1,30 +1,55 @@
-import React from "react";
-import LessonTemplate from "./LessonTemplate.jsx";
-import LessonTrainer from "./LessonTrainer.jsx";
-
-// Lesson 1 — Home Row (базові клавіші)
-const HOME_ROW = ["A", "S", "D", "F", "J", "K", "L"];
-
-const lesson1Config = {
-  id: 1,
-  title: "Lesson 1 — Home Row Mastery",
-  description: "Start with home row keys. Focus on accuracy first, then speed.",
-  allowedKeys: HOME_ROW,
-  stages: [
-    ["F", "J"],                 // старт: опорні
-    ["D", "K", "F", "J"],        // додаємо сусідів
-    ["S", "L", "D", "K"],        // ще ширше
-    ["A", "S", "D", "F"],        // ліва рука
-    ["J", "K", "L"],             // права рука
-    HOME_ROW,                    // весь home-row
-  ],
-  reps: 50, // по твоєму плану: урок 1 = 50 натисків (але це per stage; якщо треба total — скажеш, переробимо)
-};
+import React, { useMemo } from "react";
+import LessonTrainer from "./LessonTrainer";
+import { useSettings } from "../../context/useSettings";
 
 export default function Lesson1() {
+  const { language } = useSettings();
+  const isUK = language === "uk";
+
+  const ui = useMemo(
+    () => ({
+      title: isUK ? "Урок 1 — Домашній ряд" : "Lesson 1 — Home Row",
+      tip: isUK
+        ? "Тримай пальці на домашньому ряду. Дивись на екран, не на клавіатуру."
+        : "Keep fingers on the home row. Look at the screen, not the keyboard.",
+    }),
+    [isUK]
+  );
+
+  const config = useMemo(
+    () => ({
+      id: 1,
+
+      allowedCodes: [
+        "KeyA",
+        "KeyS",
+        "KeyD",
+        "KeyF",
+        "KeyJ",
+        "KeyK",
+        "KeyL",
+        "Semicolon",
+        "Quote",
+      ],
+
+      stages: [
+        ["KeyA", "KeyS", "KeyD", "KeyF"],
+        ["KeyJ", "KeyK", "KeyL", "Semicolon", "Quote"],
+        ["KeyA", "KeyS", "KeyD", "KeyF", "KeyJ", "KeyK", "KeyL", "Semicolon", "Quote"],
+      ],
+
+      reps: 20,
+      ui,
+    }),
+    [ui]
+  );
+
   return (
-    <LessonTemplate title={lesson1Config.title} description={lesson1Config.description}>
-      <LessonTrainer config={lesson1Config} />
-    </LessonTemplate>
+    <div className="max-w-5xl mx-auto">
+      <h1 className="text-3xl font-extrabold text-white mb-2">{ui.title}</h1>
+      <p className="text-gray-400 mb-6">{ui.tip}</p>
+
+      <LessonTrainer config={config} />
+    </div>
   );
 }

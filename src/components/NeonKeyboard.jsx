@@ -1,7 +1,9 @@
 import React, { useMemo } from "react";
 import { KEYBOARD_ROWS } from "../data/keyboardLayouts";
 
-// Bottom row widths (залишаємо як було)
+const H_STD = "h-[50px]";
+const GAP = "gap-3";
+
 const W_STD = "w-[58px]";
 const W_FN = "w-[58px]";
 const W_CONTROL = "w-[70px]";
@@ -16,59 +18,35 @@ export default function NeonKeyboard({
   errorFlash = false,
   layout = "en",
 }) {
-  const allowedSet = useMemo(() => new Set(allowedCodes), [allowedCodes]);
   const highlightSet = useMemo(() => new Set(highlightCodes), [highlightCodes]);
-
-  const isAllowed = (code) => (code ? allowedSet.has(code) : false);
-  const isHighlighted = (code) => (code ? highlightSet.has(code) : false);
+  const allowedSet = useMemo(() => new Set(allowedCodes), [allowedCodes]);
 
   const keyBaseStyle =
     "border border-neoBlue/70 bg-neoDark/40 rounded-md shadow-[0_0_15px_#00eaff80] transition-all duration-200";
 
-  const H_STD = "h-[50px]";
-  const GAP = "gap-3";
-
   const getKeyClass = (code) => {
-    // якщо немає коду (tab/shift/etc) — робимо приглушено
-    if (!code) return "opacity-25";
-
-    if (isHighlighted(code))
+    if (code && highlightSet.has(code)) {
       return "border-pink-500 shadow-[0_0_25px_#ff00e6] text-pink-400";
-
-    if (!isAllowed(code)) return "opacity-20";
-
-    return "text-cyan-300";
+    }
+    if (code && allowedSet.has(code)) return "text-cyan-300";
+    return "opacity-20";
   };
 
-  const renderLabel = (keyData) => {
+  const getLabel = (keyData) => {
     if (!showLabels) return null;
-
-    const code = keyData.code;
-    if (!code) return null; 
-
-    const text =
-      keyData.label ??
-      (layout === "uk" ? keyData.labelUk : keyData.labelEn) ??
-      "";
-
-    return (
-      <span className={isHighlighted(code) ? "text-pink-400" : "text-cyan-300"}>
-        {String(text).toUpperCase()}
-      </span>
-    );
+    if (keyData.label) return keyData.label.toUpperCase(); 
+    const text = layout === "uk" ? keyData.labelUk : keyData.labelEn;
+    return (text ?? "").toUpperCase();
   };
-
 
   return (
     <div
       className={`
         w-full max-w-[1100px] mx-auto p-8 rounded-2xl select-none
-        bg-neoDark/40 transition-all duration-150 border
-        ${
-          errorFlash
-            ? "shadow-[0_0_15px_#ff0033] border-red-500"
-            : "shadow-[0_0_20px_#00eaff55] border-neoBlue/40"
-        }
+        bg-neoDark/40 transition-all duration-150
+        ${errorFlash
+          ? "shadow-[0_0_15px_#ff0033] border-red-500"
+          : "shadow-[0_0_20px_#00eaff55] border-neoBlue/40"}
       `}
     >
       <div className={`flex flex-col ${GAP}`}>
@@ -81,32 +59,37 @@ export default function NeonKeyboard({
                   keyData.code
                 )}`}
               >
-                {renderLabel(keyData)}
+                {showLabels ? (
+                  <span
+                    className={
+                      keyData.code && highlightSet.has(keyData.code)
+                        ? "text-pink-400"
+                        : "text-cyan-300"
+                    }
+                  >
+                    {getLabel(keyData)}
+                  </span>
+                ) : null}
               </div>
             ))}
           </div>
         ))}
 
-        {/* Bottom row (залишаємо як декоративну) */}
         <div className={`flex justify-center ${GAP} mt-3`}>
-          {/* Left modifiers */}
           <div className={`flex ${GAP}`}>
             {[W_FN, W_CONTROL, W_OPTION, W_COMMAND].map((w, idx) => (
               <div key={idx} className={`${keyBaseStyle} ${w} ${H_STD} opacity-20`} />
             ))}
           </div>
 
-          {/* Space */}
           <div className={`${keyBaseStyle} ${W_SPACE} ${H_STD} opacity-20`} />
 
-          {/* Right modifiers */}
           <div className={`flex ${GAP}`}>
             {[W_COMMAND, W_OPTION].map((w, idx) => (
               <div key={idx} className={`${keyBaseStyle} ${w} ${H_STD} opacity-20`} />
             ))}
           </div>
 
-          {/* Arrows */}
           <div className={`flex ${GAP}`}>
             <div className={`${keyBaseStyle} ${W_STD} ${H_STD} opacity-20`} />
             <div className="flex flex-col gap-1">

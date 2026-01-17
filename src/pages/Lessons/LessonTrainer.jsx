@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useCallback, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import NeonKeyboard from "../../components/NeonKeyboard.jsx";
+import { KEYBOARD_ROWS } from "../../data/keyboardLayouts";
 import { addSession } from "../../data/statsStore";
 import { emitStatsUpdate } from "../../data/statsEvents";
-import { useSettings } from "../../context/useSettings.js";
+import { useSettings } from "../../context/useSettings";
 
 const PASS_ACCURACY = 90;
 
@@ -14,110 +15,45 @@ function formatTime(ms) {
   return `${mm}:${ss}`;
 }
 
-function LessonResultModal({
-  isOpen,
-  passed,
-  progress,
-  accuracy,
-  wpm,
-  elapsedMs,
-  passAccuracy,
-  onExit,
-  onRetry,
-}) {
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-
-      <div
-        className="relative w-[92%] max-w-xl rounded-2xl border border-cyan-400/40 bg-black/80 p-8
-                   shadow-[0_0_40px_rgba(0,234,255,0.25)]"
-      >
-        <div className="text-center">
-          <div className="text-sm tracking-[0.35em] text-cyan-300/80 mb-3">
-            TOUCHMASTER REPORT
-          </div>
-
-          {passed ? (
-            <h2 className="text-3xl font-extrabold text-pink-400 drop-shadow-[0_0_18px_rgba(255,0,230,0.45)]">
-              Вітаємо! Урок пройдений ✅
-            </h2>
-          ) : (
-            <h2 className="text-3xl font-extrabold text-pink-400 drop-shadow-[0_0_18px_rgba(255,0,230,0.45)]">
-              Майже! Спробуй ще раз 🔁
-            </h2>
-          )}
-
-          <div className="mt-6 grid grid-cols-2 gap-4 text-left">
-            <div className="rounded-xl border border-cyan-500/20 bg-black/40 p-4">
-              <div className="text-xs text-gray-400">Total</div>
-              <div className="text-2xl font-bold text-cyan-300">{progress}%</div>
-            </div>
-
-            <div className="rounded-xl border border-pink-500/20 bg-black/40 p-4">
-              <div className="text-xs text-gray-400">Accuracy</div>
-              <div className="text-2xl font-bold text-pink-400">{accuracy}%</div>
-            </div>
-
-            <div className="rounded-xl border border-cyan-500/20 bg-black/40 p-4">
-              <div className="text-xs text-gray-400">WPM</div>
-              <div className="text-2xl font-bold text-cyan-300">{wpm}</div>
-            </div>
-
-            <div className="rounded-xl border border-gray-500/20 bg-black/40 p-4">
-              <div className="text-xs text-gray-400">Time</div>
-              <div className="text-2xl font-bold text-white">{formatTime(elapsedMs)}</div>
-            </div>
-          </div>
-
-          <div className="mt-8 flex justify-center gap-4">
-            {passed ? (
-              <button
-                onClick={onExit}
-                className="px-8 py-3 rounded-xl font-bold border border-cyan-400/60 text-cyan-300
-                           hover:bg-cyan-400/10 hover:shadow-[0_0_20px_rgba(0,234,255,0.35)] transition-all"
-              >
-                OK
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={onRetry}
-                  className="px-8 py-3 rounded-xl font-bold border border-pink-500/60 text-pink-400
-                             hover:bg-pink-500/10 hover:shadow-[0_0_20px_rgba(255,0,230,0.35)] transition-all"
-                >
-                  OK (ще раз)
-                </button>
-                <button
-                  onClick={onExit}
-                  className="px-8 py-3 rounded-xl font-bold border border-cyan-400/60 text-cyan-300
-                             hover:bg-cyan-400/10 hover:shadow-[0_0_20px_rgba(0,234,255,0.35)] transition-all"
-                >
-                  Вийти
-                </button>
-              </>
-            )}
-          </div>
-
-          <div className="mt-4 text-xs text-gray-500">
-            Pass condition: Accuracy ≥ {passAccuracy}%
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+function buildCodeToLabelMap() {
+  const m = new Map();
+  for (const row of KEYBOARD_ROWS) {
+    for (const k of row) {
+      if (!k.code) continue;
+      m.set(k.code, { en: k.labelEn ?? k.label ?? "", uk: k.labelUk ?? k.label ?? "" });
+    }
+  }
+  return m;
 }
 
 export default function LessonTrainer({ config }) {
   const navigate = useNavigate();
-  const { allowedKeys = [], stages = [], reps = 20, id } = config ?? {};
+  const { layout, language } = useSettings();
+  const isUK = language === "uk";
+
+  const codeToLabel = useMemo(() => buildCodeToLabelMap(), []);
+  const labelOf = useCallback(
+    (code) => {
+      const it = codeToLabel.get(code);
+      if (!it) return code;
+      return (layout === "uk" ? it.uk : it.en) || code;
+    },
+    [codeToLabel, layout]
+  );
+
+  const { stages = [], reps = 20, id = "lesson" } = config;
+
+  const allowedCodes = useMemo(() => {
+    const s = new Set();
+    for (const st of stages) for (const c of st) s.add(c);
+    return Array.from(s);
+  }, [stages]);
+
   const totalTarget = reps * stages.length;
 
   const [stageIndex, setStageIndex] = useState(0);
   const [completedInStage, setCompletedInStage] = useState(0);
-  const [currentKey, setCurrentKey] = useState(null);
+  const [currentCode, setCurrentCode] = useState(null);
 
   const [mistakes, setMistakes] = useState(0);
   const [correctPresses, setCorrectPresses] = useState(0);
@@ -128,48 +64,11 @@ export default function LessonTrainer({ config }) {
   const [startTime, setStartTime] = useState(null);
   const [elapsedMs, setElapsedMs] = useState(0);
 
-  const { layout } = useSettings();
-
   const savedRef = useRef(false);
-  const finishedRef = useRef(false);
-
-  useEffect(() => {
-    finishedRef.current = lessonFinished;
-  }, [lessonFinished]);
-
-  const keyToCode = useCallback((k) => {
-    if (!k) return null;
-    const up = String(k).toUpperCase();
-
-    if (up.length === 1 && up >= "A" && up <= "Z") return `Key${up}`;
-
-    const MAP = {
-      "{": "BracketLeft",
-      "}": "BracketRight",
-      ";": "Semicolon",
-      "'": "Quote",
-      "`": "Backquote",
-      ",": "Comma",
-      ".": "Period",
-      "/": "Slash",
-      "\\": "Backslash",
-    };
-
-    return MAP[up] ?? null;
-  }, []);
-
-  const currentCode = useMemo(() => keyToCode(currentKey), [currentKey, keyToCode]);
-  const highlightCodes = useMemo(() => (currentCode ? [currentCode] : []), [currentCode]);
-
-  const allowedCodes = useMemo(
-    () => (allowedKeys ?? []).map(keyToCode).filter(Boolean),
-    [allowedKeys, keyToCode]
-  );
 
   const accuracy = useMemo(() => {
     const total = correctPresses + mistakes;
-    if (total === 0) return 100;
-    return Math.round((correctPresses / total) * 100);
+    return total === 0 ? 100 : Math.round((correctPresses / total) * 100);
   }, [correctPresses, mistakes]);
 
   const progress = useMemo(() => {
@@ -183,53 +82,63 @@ export default function LessonTrainer({ config }) {
     return Math.round((correctPresses / 5) / minutes);
   }, [elapsedMs, correctPresses]);
 
-  const passed = useMemo(() => accuracy >= PASS_ACCURACY, [accuracy]);
+  const passed = accuracy >= PASS_ACCURACY;
 
-  const generateNextKey = useCallback(
-    (idx = stageIndex) => {
-      const keys = stages?.[idx] ?? [];
+  const highlightCodes = useMemo(() => (currentCode ? [currentCode] : []), [currentCode]);
+
+  const generateNext = useCallback(
+    (idx) => {
+      const keys = stages[idx] ?? [];
       if (!keys.length) return;
       const random = keys[Math.floor(Math.random() * keys.length)];
-      setCurrentKey(random);
+      setCurrentCode(random);
     },
-    [stageIndex, stages]
+    [stages]
   );
+
+  useEffect(() => {
+    if (lessonFinished) return;
+    const t = window.setTimeout(() => generateNext(stageIndex), 0);
+    return () => window.clearTimeout(t);
+  }, [stageIndex, generateNext, lessonFinished]);
+
+  useEffect(() => {
+    if (!startTime || lessonFinished) return;
+    const interval = window.setInterval(() => setElapsedMs(Date.now() - startTime), 100);
+    return () => window.clearInterval(interval);
+  }, [startTime, lessonFinished]);
 
   useEffect(() => {
     if (!lessonFinished) return;
     if (savedRef.current) return;
-
     savedRef.current = true;
 
     addSession({
       mode: "lesson",
-      id: id ?? "lesson",
+      id,
       wpm,
       accuracy,
       timeMs: elapsedMs,
       correct: correctPresses,
       mistakes,
-      score: progress, // Total %
+      score: progress,
       createdAt: Date.now(),
     });
 
     emitStatsUpdate();
   }, [lessonFinished, id, wpm, accuracy, elapsedMs, correctPresses, mistakes, progress]);
 
-  const handleKeyPress = useCallback(
+  const handleKeyDown = useCallback(
     (e) => {
-      if (finishedRef.current) return;
-      if (!currentKey) return;
+      if (lessonFinished) return;
+      if (!currentCode) return;
 
       setStartTime((t) => (t ? t : Date.now()));
 
       const pressedCode = e.code;
-      const neededCode = keyToCode(currentKey);
-      if (!pressedCode || !neededCode) return;
+      if (!pressedCode) return;
 
-      if (!allowedCodes.includes(pressedCode)) return;
-
-      if (pressedCode !== neededCode) {
+      if (pressedCode !== currentCode) {
         setMistakes((m) => m + 1);
         setKeyboardErrorFlash(true);
         window.setTimeout(() => setKeyboardErrorFlash(false), 450);
@@ -240,65 +149,33 @@ export default function LessonTrainer({ config }) {
 
       setCompletedInStage((prev) => {
         const next = prev + 1;
-
         if (next >= reps) {
           nextStageIndex = Math.min(stageIndex + 1, stages.length - 1);
           setStageIndex(nextStageIndex);
           return 0;
         }
-
         return next;
       });
 
       setCorrectPresses((c) => {
         const nextCorrect = c + 1;
-
         if (nextCorrect >= totalTarget) {
           setLessonFinished(true);
-          return nextCorrect;
         }
-
         return nextCorrect;
       });
 
-      window.setTimeout(() => {
-        if (!finishedRef.current) {
-          generateNextKey(nextStageIndex);
-        }
-      }, 0);
+      queueMicrotask(() => {
+        if (!lessonFinished) generateNext(nextStageIndex);
+      });
     },
-    [
-      currentKey,
-      keyToCode,
-      stageIndex,
-      reps,
-      stages,
-      totalTarget,
-      generateNextKey,
-      allowedCodes,
-    ]
+    [lessonFinished, currentCode, stageIndex, reps, stages.length, totalTarget, generateNext]
   );
 
   useEffect(() => {
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
-  }, [handleKeyPress]);
-
-  useEffect(() => {
-    if (!startTime || lessonFinished) return;
-
-    const interval = window.setInterval(() => {
-      setElapsedMs(Date.now() - startTime);
-    }, 100);
-
-    return () => window.clearInterval(interval);
-  }, [startTime, lessonFinished]);
-
-  useEffect(() => {
-    if (lessonFinished) return;
-    const t = window.setTimeout(() => generateNextKey(stageIndex), 0);
-    return () => window.clearTimeout(t);
-  }, [stageIndex, generateNextKey, lessonFinished]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   const resetLesson = useCallback(() => {
     setLessonFinished(false);
@@ -308,56 +185,75 @@ export default function LessonTrainer({ config }) {
     setCorrectPresses(0);
     setStartTime(null);
     setElapsedMs(0);
-    setCurrentKey(null);
+    setCurrentCode(null);
     setKeyboardErrorFlash(false);
     savedRef.current = false;
-    finishedRef.current = false;
 
-    window.setTimeout(() => generateNextKey(0), 0);
-  }, [generateNextKey]);
+    window.setTimeout(() => generateNext(0), 0);
+  }, [generateNext]);
 
   return (
     <div className="text-center">
-      <LessonResultModal
-        isOpen={lessonFinished}
-        passed={passed}
-        progress={progress}
-        accuracy={accuracy}
-        wpm={wpm}
-        elapsedMs={elapsedMs}
-        passAccuracy={PASS_ACCURACY}
-        onExit={() => navigate("/lessons")}
-        onRetry={resetLesson}
-      />
+      <div className="flex justify-start mb-4">
+        <button
+          onClick={() => navigate("/lessons")}
+          className="px-4 py-2 rounded-lg border border-cyan-400/50 text-cyan-200 hover:bg-cyan-400/10 transition"
+        >
+          ← {isUK ? "Назад до уроків" : "Back to lessons"}
+        </button>
+      </div>
 
       <h2 className="text-2xl font-bold text-pink-400 mb-4">
-        Stage {stageIndex + 1} / {stages.length}
+        {isUK ? "Етап" : "Stage"} {stageIndex + 1} / {stages.length}
       </h2>
 
       <p className="text-gray-300 mb-2 text-lg">
-        Correct presses: {completedInStage} / {reps}
+        {isUK ? "Правильні натиски" : "Correct presses"}: {completedInStage} / {reps}
       </p>
 
       <p className="text-cyan-300 mb-4 font-bold text-xl">Total: {progress}%</p>
 
       <div className="flex justify-center gap-10 text-xl mb-6 font-bold">
         <div className="text-cyan-400">WPM: {wpm}</div>
-        <div className="text-pink-400">Accuracy: {accuracy}%</div>
+        <div className="text-pink-400">{isUK ? "Точність" : "Accuracy"}: {accuracy}%</div>
       </div>
 
-      {currentKey && (
+      {currentCode && (
         <div className="text-6xl mb-6 text-pink-500 font-bold drop-shadow-[0_0_20px_rgba(255,0,230,0.6)]">
-          {currentKey}
+          {labelOf(currentCode)}
         </div>
       )}
 
       <NeonKeyboard
-        showLabels={true}
+        showLabels
         layout={layout}
         highlightCodes={highlightCodes}
         allowedCodes={allowedCodes}
         errorFlash={keyboardErrorFlash}
       />
+
+      {lessonFinished && (
+        <div className="mt-6 text-gray-300">
+          {passed ? "✅ Passed" : "❌ Not passed"} · {isUK ? "Точність" : "Accuracy"} {accuracy}%
+          <div className="mt-3 flex gap-3 justify-center">
+            <button
+              onClick={resetLesson}
+              className="px-6 py-3 rounded-xl border border-pink-500/60 text-pink-300 hover:bg-pink-500/10"
+            >
+              {isUK ? "Ще раз" : "Retry"}
+            </button>
+            <button
+              onClick={() => navigate("/lessons")}
+              className="px-6 py-3 rounded-xl border border-cyan-400/60 text-cyan-200 hover:bg-cyan-400/10"
+            >
+              {isUK ? "До уроків" : "Lessons"}
+            </button>
+          </div>
+          <div className="mt-2 text-xs text-gray-500">
+            Pass: Accuracy ≥ {PASS_ACCURACY}% · Time {formatTime(elapsedMs)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
