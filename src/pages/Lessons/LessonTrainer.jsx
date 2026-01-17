@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import NeonKeyboard from "../../components/NeonKeyboard.jsx";
 import { addSession } from "../../data/statsStore";
 import { emitStatsUpdate } from "../../data/statsEvents";
-
+import { useSettings } from "../../context/useSettings.js";
 
 const PASS_ACCURACY = 90;
 
@@ -29,10 +29,8 @@ function LessonResultModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* backdrop */}
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
 
-      {/* modal */}
       <div
         className="relative w-[92%] max-w-xl rounded-2xl border border-cyan-400/40 bg-black/80 p-8
                    shadow-[0_0_40px_rgba(0,234,255,0.25)]"
@@ -60,9 +58,7 @@ function LessonResultModal({
 
             <div className="rounded-xl border border-pink-500/20 bg-black/40 p-4">
               <div className="text-xs text-gray-400">Accuracy</div>
-              <div className="text-2xl font-bold text-pink-400">
-                {accuracy}%
-              </div>
+              <div className="text-2xl font-bold text-pink-400">{accuracy}%</div>
             </div>
 
             <div className="rounded-xl border border-cyan-500/20 bg-black/40 p-4">
@@ -72,9 +68,7 @@ function LessonResultModal({
 
             <div className="rounded-xl border border-gray-500/20 bg-black/40 p-4">
               <div className="text-xs text-gray-400">Time</div>
-              <div className="text-2xl font-bold text-white">
-                {formatTime(elapsedMs)}
-              </div>
+              <div className="text-2xl font-bold text-white">{formatTime(elapsedMs)}</div>
             </div>
           </div>
 
@@ -118,8 +112,7 @@ function LessonResultModal({
 
 export default function LessonTrainer({ config }) {
   const navigate = useNavigate();
-  const { allowedKeys = [], stages = [], reps = 20 } = config;
-
+  const { allowedKeys = [], stages = [], reps = 20, id } = config ?? {};
   const totalTarget = reps * stages.length;
 
   const [stageIndex, setStageIndex] = useState(0);
@@ -132,13 +125,46 @@ export default function LessonTrainer({ config }) {
   const [keyboardErrorFlash, setKeyboardErrorFlash] = useState(false);
   const [lessonFinished, setLessonFinished] = useState(false);
 
-  // Timer
   const [startTime, setStartTime] = useState(null);
   const [elapsedMs, setElapsedMs] = useState(0);
 
-  const highlightKeys = currentKey ? [currentKey.toLowerCase()] : [];
-  const savedRef = useRef(false);
+  const { layout } = useSettings();
 
+  const savedRef = useRef(false);
+  const finishedRef = useRef(false);
+
+  useEffect(() => {
+    finishedRef.current = lessonFinished;
+  }, [lessonFinished]);
+
+  const keyToCode = useCallback((k) => {
+    if (!k) return null;
+    const up = String(k).toUpperCase();
+
+    if (up.length === 1 && up >= "A" && up <= "Z") return `Key${up}`;
+
+    const MAP = {
+      "{": "BracketLeft",
+      "}": "BracketRight",
+      ";": "Semicolon",
+      "'": "Quote",
+      "`": "Backquote",
+      ",": "Comma",
+      ".": "Period",
+      "/": "Slash",
+      "\\": "Backslash",
+    };
+
+    return MAP[up] ?? null;
+  }, []);
+
+  const currentCode = useMemo(() => keyToCode(currentKey), [currentKey, keyToCode]);
+  const highlightCodes = useMemo(() => (currentCode ? [currentCode] : []), [currentCode]);
+
+  const allowedCodes = useMemo(
+    () => (allowedKeys ?? []).map(keyToCode).filter(Boolean),
+    [allowedKeys, keyToCode]
+  );
 
   const accuracy = useMemo(() => {
     const total = correctPresses + mistakes;
@@ -159,109 +185,99 @@ export default function LessonTrainer({ config }) {
 
   const passed = useMemo(() => accuracy >= PASS_ACCURACY, [accuracy]);
 
-  const generateNextKey = useCallback((idx = stageIndex) => {
-  const keys = stages[idx];
-  const random = keys[Math.floor(Math.random() * keys.length)];
-  setCurrentKey(random);
-}, [stageIndex, stages]);
+  const generateNextKey = useCallback(
+    (idx = stageIndex) => {
+      const keys = stages?.[idx] ?? [];
+      if (!keys.length) return;
+      const random = keys[Math.floor(Math.random() * keys.length)];
+      setCurrentKey(random);
+    },
+    [stageIndex, stages]
+  );
 
   useEffect(() => {
-  if (!lessonFinished) return;
-  if (savedRef.current) return;
-  savedRef.current = true;
+    if (!lessonFinished) return;
+    if (savedRef.current) return;
 
-  addSession({
-    mode: "lesson",
-    id: config?.id ?? "lesson",
-    wpm,
-    accuracy,
-    timeMs: elapsedMs,
-    correct: correctPresses,
-    mistakes,
-    score: progress, // Total %
-    createdAt: Date.now(),
-  });
+    savedRef.current = true;
 
-  emitStatsUpdate();
-}, [
-  lessonFinished,
-  config?.id,
-  wpm,
-  accuracy,
-  elapsedMs,
-  correctPresses,
-  mistakes,
-  progress,
-]);
-
-
-const handleKeyPress = useCallback(
-  (e) => {
-    if (lessonFinished) return;
-    if (!currentKey) return;
-
-    const pressed = e.key.toLowerCase();
-    const needed = currentKey.toLowerCase();
-
-    // start timer on first press (any)
-    setStartTime((t) => (t ? t : Date.now()));
-
-    if (pressed !== needed) {
-      setMistakes((m) => m + 1);
-
-      setKeyboardErrorFlash(true);
-      window.setTimeout(() => setKeyboardErrorFlash(false), 450);
-      return;
-    }
-
-    // ✅ CORRECT PRESS
-    let nextStageIndex = stageIndex; // локально порахуємо куди йдемо далі
-
-    setCompletedInStage((prev) => {
-      const next = prev + 1;
-
-      // stage complete -> go next stage
-      if (next >= reps) {
-        nextStageIndex = Math.min(stageIndex + 1, stages.length - 1);
-        setStageIndex(nextStageIndex);
-        return 0;
-      }
-
-      return next;
+    addSession({
+      mode: "lesson",
+      id: id ?? "lesson",
+      wpm,
+      accuracy,
+      timeMs: elapsedMs,
+      correct: correctPresses,
+      mistakes,
+      score: progress, // Total %
+      createdAt: Date.now(),
     });
 
-    setCorrectPresses((c) => {
-      const nextCorrect = c + 1;
+    emitStatsUpdate();
+  }, [lessonFinished, id, wpm, accuracy, elapsedMs, correctPresses, mistakes, progress]);
 
-      // ✅ lesson complete based on TOTAL correct presses
-      if (nextCorrect >= totalTarget) {
-        setLessonFinished(true);
+  const handleKeyPress = useCallback(
+    (e) => {
+      if (finishedRef.current) return;
+      if (!currentKey) return;
+
+      setStartTime((t) => (t ? t : Date.now()));
+
+      const pressedCode = e.code;
+      const neededCode = keyToCode(currentKey);
+      if (!pressedCode || !neededCode) return;
+
+      if (!allowedCodes.includes(pressedCode)) return;
+
+      if (pressedCode !== neededCode) {
+        setMistakes((m) => m + 1);
+        setKeyboardErrorFlash(true);
+        window.setTimeout(() => setKeyboardErrorFlash(false), 450);
+        return;
+      }
+
+      let nextStageIndex = stageIndex;
+
+      setCompletedInStage((prev) => {
+        const next = prev + 1;
+
+        if (next >= reps) {
+          nextStageIndex = Math.min(stageIndex + 1, stages.length - 1);
+          setStageIndex(nextStageIndex);
+          return 0;
+        }
+
+        return next;
+      });
+
+      setCorrectPresses((c) => {
+        const nextCorrect = c + 1;
+
+        if (nextCorrect >= totalTarget) {
+          setLessonFinished(true);
+          return nextCorrect;
+        }
+
         return nextCorrect;
-      }
+      });
 
-      return nextCorrect;
-    });
-
-    // ✅ always generate next key (but for correct stage)
-    // if stage advanced, we need to generate using the new stage
-    // so we schedule it to run after state updates
-    queueMicrotask(() => {
-      // якщо урок вже завершився — не генеруємо
-      if (!lessonFinished) {
-        generateNextKey(nextStageIndex);
-      }
-    });
-  },
-  [
-    lessonFinished,
-    currentKey,
-    reps,
-    stageIndex,
-    stages.length,
-    totalTarget,
-    generateNextKey,
-  ]
-);
+      window.setTimeout(() => {
+        if (!finishedRef.current) {
+          generateNextKey(nextStageIndex);
+        }
+      }, 0);
+    },
+    [
+      currentKey,
+      keyToCode,
+      stageIndex,
+      reps,
+      stages,
+      totalTarget,
+      generateNextKey,
+      allowedCodes,
+    ]
+  );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyPress);
@@ -278,14 +294,9 @@ const handleKeyPress = useCallback(
     return () => window.clearInterval(interval);
   }, [startTime, lessonFinished]);
 
-  // ESLint-safe: new key on stage change
   useEffect(() => {
     if (lessonFinished) return;
-
-    const t = window.setTimeout(() => {
-      generateNextKey(stageIndex);
-    }, 0);
-
+    const t = window.setTimeout(() => generateNextKey(stageIndex), 0);
     return () => window.clearTimeout(t);
   }, [stageIndex, generateNextKey, lessonFinished]);
 
@@ -300,10 +311,9 @@ const handleKeyPress = useCallback(
     setCurrentKey(null);
     setKeyboardErrorFlash(false);
     savedRef.current = false;
+    finishedRef.current = false;
 
-    window.setTimeout(() => {
-      generateNextKey(0);
-    }, 0);
+    window.setTimeout(() => generateNextKey(0), 0);
   }, [generateNextKey]);
 
   return (
@@ -342,9 +352,10 @@ const handleKeyPress = useCallback(
       )}
 
       <NeonKeyboard
-        showLabels={false}
-        highlightKeys={highlightKeys}
-        allowedKeys={allowedKeys}
+        showLabels={true}
+        layout={layout}
+        highlightCodes={highlightCodes}
+        allowedCodes={allowedCodes}
         errorFlash={keyboardErrorFlash}
       />
     </div>

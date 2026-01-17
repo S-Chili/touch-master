@@ -44,8 +44,7 @@ export default function NeonKeyboard({
     if (!showLabels) return null;
 
     const code = keyData.code;
-    if (!code) return null;              // не показуємо службові (tab/shift) — можеш змінити
-    if (!isAllowed(code)) return null;
+    if (!code) return null; 
 
     const text =
       keyData.label ??
@@ -58,6 +57,7 @@ export default function NeonKeyboard({
       </span>
     );
   };
+
 
   return (
     <div
