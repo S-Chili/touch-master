@@ -1,28 +1,57 @@
-import React from "react";
-import LessonTemplate from "./LessonTemplate.jsx";
-import LessonTrainer from "./LessonTrainer.jsx";
-
-const BOTTOM_ROW = ["Z", "X", "C", "V", "B", "N", "M"];
-
-const lesson5Config = {
-  id: 5,
-  title: "Lesson 5 — Bottom Row",
-  description: "Practicing the lowest row (Z, X, C, V, M, N) and thumb movement.",
-  allowedKeys: BOTTOM_ROW,
-  stages: [
-    ["Z", "X"],
-    ["C", "V"],
-    ["B", "N"],
-    ["M"],
-    BOTTOM_ROW,
-  ],
-  reps: 20,
-};
+import React, { useMemo } from "react";
+import LessonTrainer from "./LessonTrainer";
+import { useSettings } from "../../context/useSettings";
+import lessons from "../../data/lessonData";
 
 export default function Lesson5() {
+  const { language } = useSettings();
+  const isUK = language === "uk";
+
+  const lesson = useMemo(
+    () => lessons.find((l) => l.id === 5),
+    []
+  );
+
+  const title = isUK ? lesson?.titleUk : lesson?.titleEn;
+  const description = isUK ? lesson?.descriptionUk : lesson?.descriptionEn;
+
+  const config = useMemo(
+    () => ({
+      id: 5,
+
+      stages: [
+        ["KeyV", "KeyN"],
+        ["KeyV", "KeyN", "KeyM", "KeyC"],
+        [
+          "KeyV",
+          "KeyN",
+          "KeyM",
+          "KeyC",
+          "KeyD",
+          "KeyF",
+          "KeyJ",
+          "KeyK",
+        ],
+      ],
+
+      reps: 30,
+    }),
+    []
+  );
+
+  if (!lesson) return null;
+
   return (
-    <LessonTemplate title={lesson5Config.title} description={lesson5Config.description}>
-      <LessonTrainer config={lesson5Config} />
-    </LessonTemplate>
+    <div className="max-w-5xl mx-auto">
+      <h1 className="text-3xl font-extrabold text-white mb-2">
+        {title}
+      </h1>
+
+      <p className="text-gray-400 mb-6">
+        {description}
+      </p>
+
+      <LessonTrainer config={config} />
+    </div>
   );
 }

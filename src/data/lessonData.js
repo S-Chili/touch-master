@@ -1,101 +1,95 @@
 const lessons = [
   {
     id: 1,
-    titleEn: "Lesson 1 — Home Row Mastery",
-    titleUk: "Урок 1 — Домашній ряд",
+    titleEn: "Lesson 1 — The Home Row Anchors",
+    titleUk: "Урок 1 — Якори домашнього ряду",
     descriptionEn:
-      "Learn the fundamental position for touch typing hands over the keyboard.",
+      "Master F and J keys. Feel the bumps and set your base position.",
     descriptionUk:
-      "Вивчи базову позицію пальців для сліпого набору на клавіатурі.",
+      "Опануй клавіші А та О. Відчуй виступи та встанови базову позицію.",
     component: () => import("../pages/Lessons/lesson1.jsx"),
   },
   {
     id: 2,
-    titleEn: "Lesson 2 — E and I Keys",
-    titleUk: "Урок 2 — Клавіші У та Ш",
+    titleEn: "Lesson 2 — Completing the Home Row",
+    titleUk: "Урок 2 — Весь середній ряд",
     descriptionEn:
-      "Introduce the most common vowels in the top row using your middle fingers.",
-    descriptionUk: "Освой літери верхнього ряду середніми пальцями.",
+      "Add D, S, A and K, L, ; keys. Your fingers now cover the middle row.",
+    descriptionUk:
+      "Додай В, І, Ф та Л, Д, Ж. Твої пальці тепер контролюють середній ряд.",
     component: () => import("../pages/Lessons/lesson2.jsx"),
   },
   {
     id: 3,
-    titleEn: "Lesson 3 — R, U, and O Keys",
-    titleUk: "Урок 3 — Клавіші К, Г та Щ",
+    titleEn: "Lesson 3 — Reaching Up: E and I",
+    titleUk: "Урок 3 — Крок вгору: У та Ш",
     descriptionEn:
-      "Expanding your reach on the top row to strengthen index and ring fingers.",
+      "Middle fingers move up. Learn to reach E and I without moving your wrists.",
     descriptionUk:
-      "Розширюй зону досяжності верхнього ряду для вказівних та підмізинних пальців.",
+      "Середні пальці йдуть вгору. Навчися діставати У та Ш, не рухаючи кистями.",
     component: () => import("../pages/Lessons/lesson3.jsx"),
   },
   {
     id: 4,
-    titleEn: "Lesson 4 — W and P Keys",
-    titleUk: "Урок 4 — Клавіші Ц та З",
+    titleEn: "Lesson 4 — Index Finger Stretch: R, U, T, Y",
+    titleUk: "Урок 4 — Робота вказівних: К, Г, Е, Н",
     descriptionEn:
-      "Focus on the outer reaches of the top row with your ring and pinky fingers.",
+      "Index fingers are the most active. Master their reach to the top row.",
     descriptionUk:
-      "Зосередься на крайніх клавішах верхнього ряду підмізинним пальцем та мізинцем.",
+      "Вказівні пальці найактивніші. Опануй їхній рух до верхнього ряду.",
     component: () => import("../pages/Lessons/lesson4.jsx"),
   },
   {
     id: 5,
-    titleEn: "Lesson 5 — Bottom Row: V, B, N, M",
-    titleUk: "Урок 5 — Нижній ряд: М, И, Т, Ь",
-    descriptionEn:
-      "Transition to the bottom row using index fingers for central keys.",
-    descriptionUk:
-      "Переходь до нижнього ряду, використовуючи вказівні пальці для центральних клавіш.",
+    titleEn: "Lesson 5 — Reaching Down: V, M, C, N,",
+    titleUk: "Урок 5 — Крок вниз: М, Ь, С, Т",
+    descriptionEn: "Extend index and middle fingers to the bottom row.",
+    descriptionUk: "Робота вказівних та середніх пальців з нижнім рядом.",
     component: () => import("../pages/Lessons/lesson5.jsx"),
   },
   {
     id: 6,
-    titleEn: "Lesson 6 — The Full Bottom Row",
-    titleUk: "Урок 6 — Повний нижній ряд",
+    titleEn: "Lesson 6 — Ring and Pinky: W, O, X, ','",
+    titleUk: "Урок 6 — Слабкі пальці: Ц, Щ, Ч, Б",
     descriptionEn:
-      "Master Z, X, C and punctuation keys to complete the alphabet.",
+      "Strengthen your ring and pinky fingers on top and bottom rows.",
     descriptionUk:
-      "Опануй Я, Ч, С та клавіші пунктуації, щоб завершити вивчення алфавіту.",
+      "Зміцнюй підмізинні пальці та мізинці на верхньому та нижньому рядах.",
     component: () => import("../pages/Lessons/lesson6.jsx"),
   },
   {
     id: 7,
-    titleEn: "Lesson 7 — Capitalization & Shift Keys",
-    titleUk: "Урок 7 — Велика літера та Shift",
-    descriptionEn:
-      "Learn to use opposite Shift keys for smooth capitalization.",
+    titleEn: "Lesson 7 — Corner Keys: Q, P, Z, /",
+    titleUk: "Урок 7 — Крайні клавіші: Й, З, Я, .",
+    descriptionEn: "Master the most distant alphabet keys with your pinkies.",
     descriptionUk:
-      "Навчися використовувати протилежні клавіші Shift для плавного написання великих літер.",
+      "Опануй найвіддаленіші літери алфавіту за допомогою мізинців.",
     component: () => import("../pages/Lessons/lesson7.jsx"),
   },
   {
     id: 8,
-    titleEn: "Lesson 8 — Number Row Basics",
-    titleUk: "Урок 8 — Основи цифрового ряду",
-    descriptionEn:
-      "Start typing digits 1 through 0 without looking away from the screen.",
-    descriptionUk:
-      "Почни набирати цифри від 1 до 0, не відводячи погляду від екрана.",
+    titleEn: "Lesson 8 — Capitalization (Shift)",
+    titleUk: "Урок 8 — Великі літери (Shift)",
+    descriptionEn: "Learn the 'opposite hand' rule for the Shift key.",
+    descriptionUk: "Вивчи правило 'протилежної руки' для клавіші Shift.",
     component: () => import("../pages/Lessons/lesson8.jsx"),
   },
   {
     id: 9,
-    titleEn: "Lesson 9 — Special Symbols",
-    titleUk: "Урок 9 — Спеціальні символи",
-    descriptionEn:
-      "Master complex symbols like %, $, &, and @ using Shift and numbers.",
-    descriptionUk:
-      "Опануй складні символи, такі як %, $, &, та @, використовуючи Shift та цифри.",
+    titleEn: "Lesson 9 — Numbers & Basic Symbols",
+    titleUk: "Урок 9 — Цифри та знаки",
+    descriptionEn: "Reaching the top-most row. Numbers and simple punctuation.",
+    descriptionUk: "Робота з найвищим рядом. Цифри та проста пунктуація.",
     component: () => import("../pages/Lessons/lesson9.jsx"),
   },
   {
     id: 10,
-    titleEn: "Lesson 10 — Ultimate Speed Test",
-    titleUk: "Урок 10 — Тест на швидкість",
+    titleEn: "Lesson 10 — Full Text Flow",
+    titleUk: "Урок 10 — Повний текстовий потік",
     descriptionEn:
-      "A comprehensive final challenge to test your speed and accuracy.",
+      "Combine everything: letters, capitals, and punctuation in real sentences.",
     descriptionUk:
-      "Комплексний фінальний іспит для перевірки твоєї швидкості та точності.",
+      "Поєднай усе: літери, великі букви та знаки в реальних реченнях.",
     component: () => import("../pages/Lessons/lesson10.jsx"),
   },
 ];

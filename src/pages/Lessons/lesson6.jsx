@@ -1,28 +1,58 @@
-import React from "react";
-import LessonTemplate from "./LessonTemplate.jsx";
-import LessonTrainer from "./LessonTrainer.jsx";
-
-const PUNCT = [",", ".", "/", "'"];
-
-const lesson6Config = {
-  id: 6,
-  title: "Lesson 6 — Punctuation Basics",
-  description: "Typing common symbols like comma, period, question mark, and apostrophe.",
-  allowedKeys: PUNCT,
-  stages: [
-    [","],
-    ["."],
-    ["/"],
-    ["'"],
-    PUNCT,
-  ],
-  reps: 20,
-};
+import React, { useMemo } from "react";
+import LessonTrainer from "./LessonTrainer";
+import { useSettings } from "../../context/useSettings";
+import lessons from "../../data/lessonData";
 
 export default function Lesson6() {
+  const { language } = useSettings();
+  const isUK = language === "uk";
+
+  const lesson = useMemo(
+    () => lessons.find((l) => l.id === 6),
+    []
+  );
+
+  const title = isUK ? lesson?.titleUk : lesson?.titleEn;
+  const description = isUK ? lesson?.descriptionUk : lesson?.descriptionEn;
+
+  const config = useMemo(
+    () => ({
+      id: 6,
+
+      stages: [
+        ["KeyW", "KeyO"],
+        ["KeyX", "Comma"],
+        ["KeyW", "KeyO", "KeyX", "Comma"],
+        [
+          "KeyW",
+          "KeyO",
+          "KeyX",
+          "Comma",
+          "KeyD",
+          "KeyF",
+          "KeyJ",
+          "KeyK",
+        ],
+      ],
+
+      reps: 25,
+    }),
+    []
+  );
+
+  if (!lesson) return null;
+
   return (
-    <LessonTemplate title={lesson6Config.title} description={lesson6Config.description}>
-      <LessonTrainer config={lesson6Config} />
-    </LessonTemplate>
+    <div className="max-w-5xl mx-auto">
+      <h1 className="text-3xl font-extrabold text-white mb-2">
+        {title}
+      </h1>
+
+      <p className="text-gray-400 mb-6">
+        {description}
+      </p>
+
+      <LessonTrainer config={config} />
+    </div>
   );
 }

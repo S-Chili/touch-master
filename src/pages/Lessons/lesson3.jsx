@@ -1,33 +1,55 @@
-import React from "react";
-import LessonTemplate from "./LessonTemplate.jsx";
-import LessonTrainer from "./LessonTrainer.jsx";
-
-// Lesson 3 — додаємо T R O (вихід в top-row)
-const BASE = ["A", "S", "D", "F", "J", "K", "L", "E", "I"];
-const NEW = ["T", "R", "O"];
-const ALLOWED = [...new Set([...BASE, ...NEW])];
-
-const lesson3Config = {
-  id: 3,
-  title: "Lesson 3 — T, R, and O Keys",
-  description: "Introduce T, R, and O. Keep rhythm and accuracy.",
-  allowedKeys: ALLOWED,
-  stages: [
-    ["F", "J"],                 // reset
-    ["T", "R"],                 // нові (ліва рука верх)
-    ["O", "I"],                 // права верх + опора
-    ["T", "R", "E", "D"],       // комбінації (ліва зона)
-    ["O", "I", "K", "L"],       // комбінації (права зона)
-    ["T", "R", "O", "E", "I"],  // top+near
-    ALLOWED,                    // все разом
-  ],
-  reps: 90,
-};
+import React, { useMemo } from "react";
+import LessonTrainer from "./LessonTrainer";
+import { useSettings } from "../../context/useSettings";
+import lessons from "../../data/lessonData";
 
 export default function Lesson3() {
+  const { language } = useSettings();
+  const isUK = language === "uk";
+
+  const lesson = useMemo(
+    () => lessons.find((l) => l.id === 3),
+    []
+  );
+
+  const title = isUK ? lesson?.titleUk : lesson?.titleEn;
+  const description = isUK ? lesson?.descriptionUk : lesson?.descriptionEn;
+
+  const config = useMemo(
+    () => ({
+      id: 3,
+
+      stages: [
+        ["KeyE", "KeyI"],
+        ["KeyF", "KeyE", "KeyJ", "KeyI"],
+        [
+          "KeyE",
+          "KeyI",
+          "KeyD",
+          "KeyF",
+          "KeyJ",
+          "KeyK",
+        ],
+      ],
+
+      reps: 30,
+    }),
+    []
+  );
+
+  if (!lesson) return null;
+
   return (
-    <LessonTemplate title={lesson3Config.title} description={lesson3Config.description}>
-      <LessonTrainer config={lesson3Config} />
-    </LessonTemplate>
+    <div className="max-w-5xl mx-auto">
+      <h1 className="text-3xl font-extrabold text-white mb-2">
+        {title}
+      </h1>
+
+      <p className="text-gray-400 mb-6">
+        {description}
+      </p>
+
+      <LessonTrainer config={config} />
+    </div>
   );
 }

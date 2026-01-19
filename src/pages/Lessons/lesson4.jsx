@@ -1,29 +1,59 @@
-import React from "react";
-import LessonTemplate from "./LessonTemplate.jsx";
-import LessonTrainer from "./LessonTrainer.jsx";
-import { lessonConfigs } from "../../data/lessonConfigs";
-
-const TOP_ROW = ["Q","W","E","R","T","Y","U","I","O","P"];
-
-const lesson4Config = {
- id: 4,
-  title: "Lesson 4 — W and P Keys",
-  description: "Training the W and P keys with increasing difficulty.",
-  allowedKeys: ["W", "P", "Q", "E", "R", "T", "Y", "U", "I", "O"],
-  stages: [
-    ["Q", "P", "W", "O"],
-    ["E", "I", "R", "U"],
-    ["T", "Y"],
-    ["Q", "T", "P", "Y"],
-    TOP_ROW,
-  ],
-  reps: lessonConfigs[4], 
-};
+import React, { useMemo } from "react";
+import LessonTrainer from "./LessonTrainer";
+import { useSettings } from "../../context/useSettings";
+import lessons from "../../data/lessonData";
 
 export default function Lesson4() {
+  const { language } = useSettings();
+  const isUK = language === "uk";
+
+  const lesson = useMemo(
+    () => lessons.find((l) => l.id === 4),
+    []
+  );
+
+  const title = isUK ? lesson?.titleUk : lesson?.titleEn;
+  const description = isUK ? lesson?.descriptionUk : lesson?.descriptionEn;
+
+  const config = useMemo(
+    () => ({
+      id: 4,
+
+      stages: [
+        ["KeyR", "KeyU"],
+        ["KeyT", "KeyY", "KeyU", "KeyR"],
+        [
+          "KeyT",
+          "KeyY",
+          "KeyU",
+          "KeyR",
+          "KeyD",
+          "KeyF",
+          "KeyJ",
+          "KeyK",
+          "KeyE",
+          "KeyI",
+        ],
+      ],
+
+      reps: 30,
+    }),
+    []
+  );
+
+  if (!lesson) return null;
+
   return (
-    <LessonTemplate title={lesson4Config.title} description={lesson4Config.description}>
-      <LessonTrainer config={lesson4Config} />
-    </LessonTemplate>
+    <div className="max-w-5xl mx-auto">
+      <h1 className="text-3xl font-extrabold text-white mb-2">
+        {title}
+      </h1>
+
+      <p className="text-gray-400 mb-6">
+        {description}
+      </p>
+
+      <LessonTrainer config={config} />
+    </div>
   );
 }

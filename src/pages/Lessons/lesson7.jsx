@@ -1,28 +1,59 @@
-import React from "react";
-import LessonTemplate from "./LessonTemplate.jsx";
-import LessonTrainer from "./LessonTrainer.jsx";
-
-const CAPS_KEYS = ["A", "S", "D", "F", "J", "K", "L"];
-
-const lesson7Config = {
-  id: 7,
-  title: "Lesson 7 — Capitalization & Shift Keys",
-  description: "Proper use of the Shift keys for capitalization and special characters.",
-  allowedKeys: CAPS_KEYS,
-  stages: [
-    ["A", "S"],
-    ["D", "F"],
-    ["J", "K"],
-    ["L"],
-    CAPS_KEYS,
-  ],
-  reps: 20,
-};
+import React, { useMemo } from "react";
+import LessonTrainer from "./LessonTrainer";
+import { useSettings } from "../../context/useSettings";
+import lessons from "../../data/lessonData";
 
 export default function Lesson7() {
+  const { language } = useSettings();
+  const isUK = language === "uk";
+
+  const lesson = useMemo(
+    () => lessons.find((l) => l.id === 7),
+    []
+  );
+
+  const title = isUK ? lesson?.titleUk : lesson?.titleEn;
+  const description = isUK ? lesson?.descriptionUk : lesson?.descriptionEn;
+
+  const config = useMemo(
+    () => ({
+      id: 7,
+
+      stages: [
+        ["KeyQ", "KeyP"],
+        ["KeyZ", "Period", "Slash"],
+        ["KeyQ", "KeyP", "KeyZ", "Period", "Slash"],
+        [
+          "KeyQ",
+          "KeyP",
+          "KeyZ",
+          "Period",
+          "Slash",
+          "KeyD",
+          "KeyF",
+          "KeyJ",
+          "KeyK",
+        ],
+      ],
+
+      reps: 25,
+    }),
+    []
+  );
+
+  if (!lesson) return null;
+
   return (
-    <LessonTemplate title={lesson7Config.title} description={lesson7Config.description}>
-      <LessonTrainer config={lesson7Config} />
-    </LessonTemplate>
+    <div className="max-w-5xl mx-auto">
+      <h1 className="text-3xl font-extrabold text-white mb-2">
+        {title}
+      </h1>
+
+      <p className="text-gray-400 mb-6">
+        {description}
+      </p>
+
+      <LessonTrainer config={config} />
+    </div>
   );
 }
