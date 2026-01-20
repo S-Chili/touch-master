@@ -1,5 +1,24 @@
 export const KEYBOARD_ROWS = [
   [
+    { w: "w-[75px]", label: "esc", code: "Escape" },
+
+    { w: "w-[58px]", labelEn: "1", labelUk: "1", code: "Digit1" },
+    { w: "w-[58px]", labelEn: "2", labelUk: "2", code: "Digit2" },
+    { w: "w-[58px]", labelEn: "3", labelUk: "3", code: "Digit3" },
+    { w: "w-[58px]", labelEn: "4", labelUk: "4", code: "Digit4" },
+    { w: "w-[58px]", labelEn: "5", labelUk: "5", code: "Digit5" },
+    { w: "w-[58px]", labelEn: "6", labelUk: "6", code: "Digit6" },
+    { w: "w-[58px]", labelEn: "7", labelUk: "7", code: "Digit7" },
+    { w: "w-[58px]", labelEn: "8", labelUk: "8", code: "Digit8" },
+    { w: "w-[58px]", labelEn: "9", labelUk: "9", code: "Digit9" },
+    { w: "w-[58px]", labelEn: "0", labelUk: "0", code: "Digit0" },
+
+    { w: "w-[58px]", labelEn: "-", labelUk: "-", code: "Minus" },
+    { w: "w-[58px]", labelEn: "=", labelUk: "=", code: "Equal" },
+
+    { w: "w-[90px]", label: "back", code: "Backspace" },
+  ],
+  [
     { w: "w-[75px]", label: "tab", code: "Tab" },
     { w: "w-[58px]", labelEn: "Q", labelUk: "Й", code: "KeyQ" },
     { w: "w-[58px]", labelEn: "W", labelUk: "Ц", code: "KeyW" },
