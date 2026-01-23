@@ -1,7 +1,6 @@
 export const KEYBOARD_ROWS = [
   [
-    { w: "w-[75px]", label: "esc", code: "Escape" },
-
+    { w: "w-[58px]", labelEn: "`", labelUk: "Ґ", code: "Backquote" },
     { w: "w-[58px]", labelEn: "1", labelUk: "1", code: "Digit1" },
     { w: "w-[58px]", labelEn: "2", labelUk: "2", code: "Digit2" },
     { w: "w-[58px]", labelEn: "3", labelUk: "3", code: "Digit3" },
@@ -12,12 +11,11 @@ export const KEYBOARD_ROWS = [
     { w: "w-[58px]", labelEn: "8", labelUk: "8", code: "Digit8" },
     { w: "w-[58px]", labelEn: "9", labelUk: "9", code: "Digit9" },
     { w: "w-[58px]", labelEn: "0", labelUk: "0", code: "Digit0" },
-
     { w: "w-[58px]", labelEn: "-", labelUk: "-", code: "Minus" },
     { w: "w-[58px]", labelEn: "=", labelUk: "=", code: "Equal" },
-
-    { w: "w-[90px]", label: "back", code: "Backspace" },
+    { w: "w-[110px]", label: "⌫", code: "Backspace" },
   ],
+
   [
     { w: "w-[75px]", label: "tab", code: "Tab" },
     { w: "w-[58px]", labelEn: "Q", labelUk: "Й", code: "KeyQ" },
@@ -32,8 +30,9 @@ export const KEYBOARD_ROWS = [
     { w: "w-[58px]", labelEn: "P", labelUk: "З", code: "KeyP" },
     { w: "w-[58px]", labelEn: "[", labelUk: "Х", code: "BracketLeft" },
     { w: "w-[58px]", labelEn: "]", labelUk: "Ї", code: "BracketRight" },
-    { w: "w-[110px]", label: "enter", code: "Enter" },
+    { w: "w-[110px]", label: "⏎", code: "Enter" },
   ],
+
   [
     { w: "w-[75px]", label: "caps", code: "CapsLock" },
     { w: "w-[58px]", labelEn: "A", labelUk: "Ф", code: "KeyA" },
@@ -47,11 +46,11 @@ export const KEYBOARD_ROWS = [
     { w: "w-[58px]", labelEn: "L", labelUk: "Д", code: "KeyL" },
     { w: "w-[58px]", labelEn: ";", labelUk: "Ж", code: "Semicolon" },
     { w: "w-[58px]", labelEn: "'", labelUk: "Є", code: "Quote" },
-    { w: "w-[145px]", label: "enter", code: "Enter" },
+    { w: "w-[145px]", label: "⏎", code: "Enter" },
   ],
+
   [
     { w: "w-[100px]", label: "shift", code: "ShiftLeft" },
-    { w: "w-[58px]", labelEn: "~", labelUk: "Ґ", code: "Backquote" },
     { w: "w-[58px]", labelEn: "Z", labelUk: "Я", code: "KeyZ" },
     { w: "w-[58px]", labelEn: "X", labelUk: "Ч", code: "KeyX" },
     { w: "w-[58px]", labelEn: "C", labelUk: "С", code: "KeyC" },
@@ -62,5 +61,6 @@ export const KEYBOARD_ROWS = [
     { w: "w-[58px]", labelEn: ",", labelUk: "Б", code: "Comma" },
     { w: "w-[58px]", labelEn: ".", labelUk: "Ю", code: "Period" },
     { w: "w-[58px]", labelEn: "/", labelUk: ".", code: "Slash" },
+    { w: "w-[100px]", label: "shift", code: "ShiftRight" },
   ],
 ];

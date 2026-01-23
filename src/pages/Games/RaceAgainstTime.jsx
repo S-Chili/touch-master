@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import NeonKeyboard from "../../components/NeonKeyboard.jsx";
 import { addSession } from "../../data/statsStore";
 import { emitStatsUpdate } from "../../data/statsEvents";
+import { KEYBOARD_ROWS } from "../../data/keyboardLayouts";
+import { useSettings } from "../../context/useSettings";
 
-const DEFAULT_ALLOWED = [
-  "Q","W","E","R","T","Y","U","I","O","P",
-  "A","S","D","F","G","H","J","K","L",
-  "Z","X","C","V","B","N","M",
+const DEFAULT_ALLOWED_CODES = [
+  "KeyQ","KeyW","KeyE","KeyR","KeyT","KeyY","KeyU","KeyI","KeyO","KeyP",
+  "KeyA","KeyS","KeyD","KeyF","KeyG","KeyH","KeyJ","KeyK","KeyL",
+  "KeyZ","KeyX","KeyC","KeyV","KeyB","KeyN","KeyM",
 ];
 
 function formatTime(sec) {
@@ -16,45 +18,219 @@ function formatTime(sec) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+function buildCodeToLabelMap() {
+  const m = new Map();
+  for (const row of KEYBOARD_ROWS) {
+    for (const k of row) {
+      if (!k.code) continue;
+      m.set(k.code, {
+        en: k.labelEn ?? k.label ?? "",
+        uk: k.labelUk ?? k.label ?? "",
+      });
+    }
+  }
+  return m;
+}
+
+function ResultModal({
+  open,
+  ui,
+  wpm,
+  accuracy,
+  correct,
+  mistakes,
+  totalKeys,
+  durationSec,
+  onAgain,
+  onExit,
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onEsc = (e) => {
+      if (e.key === "Escape") onExit?.();
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [open, onExit]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={onExit}
+      />
+
+      <div
+        className="
+          relative w-[92%] max-w-xl rounded-2xl p-8
+          border border-cyan-400/50
+          bg-black/70
+          shadow-[0_0_35px_rgba(0,234,255,0.35)]
+          font-mono text-white
+        "
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="text-center mb-6">
+          <div className="text-pink-400 text-3xl font-extrabold drop-shadow-[0_0_14px_rgba(255,0,230,0.45)]">
+            {ui.timeUp}
+          </div>
+          <div className="text-gray-300 mt-2">{ui.resultsSubtitle}</div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="rounded-xl p-4 border border-cyan-500/30 bg-black/40">
+            <div className="text-gray-400 text-xs">WPM</div>
+            <div className="text-cyan-300 text-3xl font-bold">{wpm}</div>
+          </div>
+
+          <div className="rounded-xl p-4 border border-pink-500/25 bg-black/40">
+            <div className="text-gray-400 text-xs">{ui.accuracy}</div>
+            <div className="text-pink-400 text-3xl font-bold">{accuracy}%</div>
+          </div>
+
+          <div className="rounded-xl p-4 border border-cyan-500/30 bg-black/40">
+            <div className="text-gray-400 text-xs">{ui.correct}</div>
+            <div className="text-cyan-200 text-2xl font-bold">{correct}</div>
+          </div>
+
+          <div className="rounded-xl p-4 border border-red-500/30 bg-black/40">
+            <div className="text-gray-400 text-xs">{ui.mistakes}</div>
+            <div className="text-red-300 text-2xl font-bold">{mistakes}</div>
+          </div>
+
+          <div className="rounded-xl p-4 border border-cyan-500/30 bg-black/40 col-span-2">
+            <div className="text-gray-400 text-xs">{ui.totalKeys}</div>
+            <div className="text-white text-2xl font-bold">
+              {totalKeys} · {ui.duration}: {durationSec}s
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={onAgain}
+            className="
+              px-6 py-3 rounded-xl font-bold
+              border border-cyan-400/60 text-cyan-300
+              shadow-[0_0_18px_rgba(0,234,255,0.25)]
+              hover:bg-cyan-400/10 transition-all
+            "
+          >
+            {ui.playAgain}
+          </button>
+
+          <button
+            onClick={onExit}
+            className="
+              px-6 py-3 rounded-xl font-bold
+              border border-pink-500/50 text-pink-400
+              shadow-[0_0_18px_rgba(255,0,230,0.18)]
+              hover:bg-pink-500/10 transition-all
+            "
+          >
+            {ui.back}
+          </button>
+        </div>
+
+        <div className="mt-3 text-xs text-gray-500 text-center">
+          Esc — {ui.back}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RaceAgainstTime() {
   const navigate = useNavigate();
+  const { layout, language } = useSettings();
 
-  const [duration, setDuration] = useState(60);
-  const allowedKeys = useMemo(() => DEFAULT_ALLOWED, []);
-  const allowedLower = useMemo(
-    () => allowedKeys.map((k) => k.toLowerCase()),
-    [allowedKeys]
+  const isUkMode = language === "uk" && layout === "uk";
+
+  const ui = useMemo(() => {
+    if (isUkMode) {
+      return {
+        gameMode: "РЕЖИМ ГРИ",
+        title: "ГОНКА З ЧАСОМ",
+        desc: "Перевір свій максимум швидкості. Друкуй без зупинки, доки не закінчиться час.",
+        duration: "Тривалість",
+        playNow: "Почати",
+        timeLeft: "Залишилось часу",
+        accuracy: "Точність",
+        totalKeys: "Усього натисків",
+        reset: "Скинути",
+        back: "Назад",
+        timeUp: "ЧАС ВИЙШОВ",
+        resultsSubtitle: "Класний забіг. Ось результати:",
+        correct: "Правильно",
+        mistakes: "Помилки",
+        playAgain: "Ще раз",
+      };
+    }
+    return {
+      gameMode: "GAME MODE",
+      title: "RACE AGAINST TIME",
+      desc: "Test your raw WPM limit. Type continuously until the timer runs out.",
+      duration: "Duration",
+      playNow: "Play Now",
+      timeLeft: "Time left",
+      accuracy: "Accuracy",
+      totalKeys: "Total keys",
+      reset: "Reset",
+      back: "Back",
+      timeUp: "TIME’S UP",
+      resultsSubtitle: "Nice run. Here are your results:",
+      correct: "Correct",
+      mistakes: "Mistakes",
+      playAgain: "Play Again",
+    };
+  }, [isUkMode]);
+
+  const allowedCodes = useMemo(() => DEFAULT_ALLOWED_CODES, []);
+
+  const codeToLabel = useMemo(() => buildCodeToLabelMap(), []);
+  const labelOf = useCallback(
+    (code) => {
+      const it = codeToLabel.get(code);
+      if (!it) return code;
+      return (layout === "uk" ? it.uk : it.en) || code;
+    },
+    [codeToLabel, layout]
   );
 
-  const [phase, setPhase] = useState("idle"); 
+  const [duration, setDuration] = useState(60);
+
+  const [phase, setPhase] = useState("idle"); // "idle" | "running" | "finished"
   const [timeLeft, setTimeLeft] = useState(duration);
 
-  const [currentKey, setCurrentKey] = useState(null);
+  const [currentCode, setCurrentCode] = useState(null);
   const [errorFlash, setErrorFlash] = useState(false);
 
   const [correct, setCorrect] = useState(0);
   const [mistakes, setMistakes] = useState(0);
-  const [total, setTotal] = useState(0);
+  const [totalKeys, setTotalKeys] = useState(0);
 
   const timerRef = useRef(null);
   const flashRef = useRef(null);
-
   const savedRef = useRef(false);
 
-  const highlightKeys = currentKey ? [currentKey.toLowerCase()] : [];
+  const highlightCodes = useMemo(
+    () => (currentCode ? [currentCode] : []),
+    [currentCode]
+  );
 
   const reset = useCallback(
     (nextDuration = duration) => {
       setPhase("idle");
-      setDuration(nextDuration);
       setTimeLeft(nextDuration);
 
-      setCurrentKey(null);
+      setCurrentCode(null);
       setErrorFlash(false);
 
       setCorrect(0);
       setMistakes(0);
-      setTotal(0);
+      setTotalKeys(0);
 
       savedRef.current = false;
 
@@ -67,16 +243,17 @@ export default function RaceAgainstTime() {
   );
 
   const pickNextKey = useCallback(() => {
-    const rand = allowedKeys[Math.floor(Math.random() * allowedKeys.length)];
-    setCurrentKey(rand);
-  }, [allowedKeys]);
+    const rand = allowedCodes[Math.floor(Math.random() * allowedCodes.length)];
+    setCurrentCode(rand);
+  }, [allowedCodes]);
 
   const start = useCallback(() => {
+    // важливо: reset + одразу phase=running
     reset(duration);
     setPhase("running");
     setTimeLeft(duration);
 
-    const t = window.setTimeout(() => pickNextKey(), 0);
+    window.setTimeout(() => pickNextKey(), 0);
 
     timerRef.current = window.setInterval(() => {
       setTimeLeft((prev) => {
@@ -89,23 +266,20 @@ export default function RaceAgainstTime() {
         return prev - 1;
       });
     }, 1000);
-
-    return () => window.clearTimeout(t);
   }, [duration, pickNextKey, reset]);
 
   const onKeyDown = useCallback(
     (e) => {
       if (phase !== "running") return;
-      if (!currentKey) return;
+      if (!currentCode) return;
       if (timeLeft <= 0) return;
 
-      const pressed = e.key.toLowerCase();
-      if (!allowedLower.includes(pressed)) return;
+      const code = e.code;
+      if (!allowedCodes.includes(code)) return;
 
-      setTotal((t) => t + 1);
+      setTotalKeys((t) => t + 1);
 
-      const needed = currentKey.toLowerCase();
-      if (pressed === needed) {
+      if (code === currentCode) {
         setCorrect((c) => c + 1);
         pickNextKey();
       } else {
@@ -116,7 +290,7 @@ export default function RaceAgainstTime() {
         flashRef.current = window.setTimeout(() => setErrorFlash(false), 450);
       }
     },
-    [allowedLower, currentKey, phase, pickNextKey, timeLeft]
+    [allowedCodes, currentCode, phase, pickNextKey, timeLeft]
   );
 
   useEffect(() => {
@@ -133,8 +307,7 @@ export default function RaceAgainstTime() {
 
   const minutes = elapsedMs / 60000;
   const wpm = minutes > 0 ? Math.round((correct / 5) / minutes) : 0;
-
-  const accuracy = total > 0 ? Math.round((correct / total) * 100) : 100;
+  const accuracy = totalKeys > 0 ? Math.round((correct / totalKeys) * 100) : 100;
 
   useEffect(() => {
     if (phase !== "finished") return;
@@ -149,12 +322,12 @@ export default function RaceAgainstTime() {
       timeMs: duration * 1000,
       correct,
       mistakes,
-      totalKeys: total,
+      totalKeys,
       createdAt: Date.now(),
     });
 
     emitStatsUpdate();
-  }, [phase, wpm, accuracy, duration, correct, mistakes, total]);
+  }, [phase, wpm, accuracy, duration, correct, mistakes, totalKeys]);
 
   useEffect(() => {
     return () => {
@@ -163,85 +336,20 @@ export default function RaceAgainstTime() {
     };
   }, []);
 
-  const ResultModal = ({ onAgain, onExit }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-
-      <div
-        className="
-          relative w-[92%] max-w-xl rounded-2xl p-8
-          border border-cyan-400/50
-          bg-black/70
-          shadow-[0_0_35px_rgba(0,234,255,0.35)]
-          font-mono text-white
-        "
-      >
-        <div className="text-center mb-6">
-          <div className="text-pink-400 text-3xl font-extrabold drop-shadow-[0_0_14px_rgba(255,0,230,0.45)]">
-            TIME’S UP
-          </div>
-          <div className="text-gray-300 mt-2">Nice run. Here are your results:</div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="rounded-xl p-4 border border-cyan-500/30 bg-black/40">
-            <div className="text-gray-400 text-xs">WPM</div>
-            <div className="text-cyan-300 text-3xl font-bold">{wpm}</div>
-          </div>
-
-          <div className="rounded-xl p-4 border border-pink-500/25 bg-black/40">
-            <div className="text-gray-400 text-xs">Accuracy</div>
-            <div className="text-pink-400 text-3xl font-bold">{accuracy}%</div>
-          </div>
-
-          <div className="rounded-xl p-4 border border-cyan-500/30 bg-black/40">
-            <div className="text-gray-400 text-xs">Correct</div>
-            <div className="text-cyan-200 text-2xl font-bold">{correct}</div>
-          </div>
-
-          <div className="rounded-xl p-4 border border-red-500/30 bg-black/40">
-            <div className="text-gray-400 text-xs">Mistakes</div>
-            <div className="text-red-300 text-2xl font-bold">{mistakes}</div>
-          </div>
-        </div>
-
-        <div className="flex gap-3 justify-center">
-          <button
-            onClick={onAgain}
-            className="
-              px-6 py-3 rounded-xl font-bold
-              border border-cyan-400/60 text-cyan-300
-              shadow-[0_0_18px_rgba(0,234,255,0.25)]
-              hover:bg-cyan-400/10 transition-all
-            "
-          >
-            Play Again
-          </button>
-
-          <button
-            onClick={onExit}
-            className="
-              px-6 py-3 rounded-xl font-bold
-              border border-pink-500/50 text-pink-400
-              shadow-[0_0_18px_rgba(255,0,230,0.18)]
-              hover:bg-pink-500/10 transition-all
-            "
-          >
-            Back
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const exitToGames = useCallback(() => {
+    // щоб не було "зависання" таймерів при переході
+    reset(duration);
+    navigate("/games");
+  }, [navigate, reset, duration]);
 
   return (
     <div className="min-h-screen p-10 text-white bg-black font-mono">
       <div className="max-w-4xl mx-auto mb-10">
-        <div className="text-cyan-300 text-sm tracking-widest opacity-80">GAME MODE</div>
-        <h1 className="text-4xl font-extrabold text-white mt-2">RACE AGAINST TIME</h1>
-        <p className="text-gray-300 mt-3 max-w-2xl">
-          Test your raw WPM limit. Type continuously until the timer runs out.
-        </p>
+        <div className="text-cyan-300 text-sm tracking-widest opacity-80">
+          {ui.gameMode}
+        </div>
+        <h1 className="text-4xl font-extrabold text-white mt-2">{ui.title}</h1>
+        <p className="text-gray-300 mt-3 max-w-2xl">{ui.desc}</p>
       </div>
 
       {phase === "idle" && (
@@ -258,7 +366,7 @@ export default function RaceAgainstTime() {
             </div>
 
             <div className="flex items-center justify-center gap-3 mb-8">
-              <span className="text-gray-300">Duration</span>
+              <span className="text-gray-300">{ui.duration}</span>
               <select
                 value={duration}
                 onChange={(e) => {
@@ -288,7 +396,7 @@ export default function RaceAgainstTime() {
                 active:scale-95
               "
             >
-              Play Now
+              {ui.playNow}
             </button>
           </div>
         </div>
@@ -298,7 +406,7 @@ export default function RaceAgainstTime() {
         <div className="max-w-5xl mx-auto text-center">
           <div className="flex flex-wrap justify-center gap-6 mb-8">
             <div className="px-5 py-3 rounded-xl border border-cyan-500/30 bg-black/40">
-              <div className="text-gray-400 text-xs">Time left</div>
+              <div className="text-gray-400 text-xs">{ui.timeLeft}</div>
               <div className="text-cyan-300 text-2xl font-bold">
                 {formatTime(timeLeft)}
               </div>
@@ -310,26 +418,27 @@ export default function RaceAgainstTime() {
             </div>
 
             <div className="px-5 py-3 rounded-xl border border-pink-500/25 bg-black/40">
-              <div className="text-gray-400 text-xs">Accuracy</div>
+              <div className="text-gray-400 text-xs">{ui.accuracy}</div>
               <div className="text-pink-400 text-2xl font-bold">{accuracy}%</div>
             </div>
 
             <div className="px-5 py-3 rounded-xl border border-cyan-500/30 bg-black/40">
-              <div className="text-gray-400 text-xs">Total keys</div>
-              <div className="text-white text-2xl font-bold">{total}</div>
+              <div className="text-gray-400 text-xs">{ui.totalKeys}</div>
+              <div className="text-white text-2xl font-bold">{totalKeys}</div>
             </div>
           </div>
 
-          {phase === "running" && currentKey && (
+          {phase === "running" && currentCode && (
             <div className="text-6xl mb-8 text-pink-500 font-bold drop-shadow-[0_0_20px_rgba(255,0,230,0.6)]">
-              {currentKey}
+              {String(labelOf(currentCode)).toUpperCase()}
             </div>
           )}
 
           <NeonKeyboard
-            showLabels={true}
-            highlightKeys={highlightKeys}
-            allowedKeys={allowedKeys}
+            showLabels
+            layout={layout}
+            highlightCodes={highlightCodes}
+            allowedCodes={allowedCodes}
             errorFlash={errorFlash}
           />
 
@@ -342,26 +451,34 @@ export default function RaceAgainstTime() {
                 hover:bg-cyan-400/10 transition-all
               "
             >
-              Reset
+              {ui.reset}
             </button>
             <button
-              onClick={() => navigate("/games")}
+              onClick={exitToGames}
               className="
                 px-6 py-3 rounded-xl font-bold
                 border border-pink-500/40 text-pink-400
                 hover:bg-pink-500/10 transition-all
               "
             >
-              Back
+              {ui.back}
             </button>
           </div>
         </div>
       )}
 
-      {phase === "finished" && (
-        // eslint-disable-next-line react-hooks/static-components
-        <ResultModal onAgain={() => start()} onExit={() => navigate("/games")} />
-      )}
+      <ResultModal
+        open={phase === "finished"}
+        ui={ui}
+        wpm={wpm}
+        accuracy={accuracy}
+        correct={correct}
+        mistakes={mistakes}
+        totalKeys={totalKeys}
+        durationSec={duration}
+        onAgain={() => start()}
+        onExit={exitToGames}
+      />
     </div>
   );
 }
