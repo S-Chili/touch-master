@@ -1,6 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import useStats from "../../hooks/useStats";
-import { computeAggregates, seriesBySession } from "../../data/statsStore";
+import { computeAggregates, seriesBySession, clearSessions } from "../../data/statsStore";
+import { emitStatsUpdate } from "../../data/statsEvents";
 
 const NEO_BLUE = "#00eaff";
 const NEO_PINK = "#ff00e6";
@@ -36,10 +37,7 @@ const StatMetricCard = ({ title, value, unit, color }) => (
       boxShadow: `0 0 18px ${color}22`,
     }}
   >
-    <div
-      className="text-sm font-semibold tracking-wider uppercase mb-1"
-      style={{ color }}
-    >
+    <div className="text-sm font-semibold tracking-wider uppercase mb-1" style={{ color }}>
       {title}
     </div>
 
@@ -105,7 +103,15 @@ function LineChartMini({ title, color, series, height = 320 }) {
         <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-80">
           <g opacity="0.25">
             {[0.25, 0.5, 0.75].map((t, i) => (
-              <line key={i} x1="0" x2={w} y1={h * t} y2={h * t} stroke="white" strokeWidth="1" />
+              <line
+                key={i}
+                x1="0"
+                x2={w}
+                y1={h * t}
+                y2={h * t}
+                stroke="white"
+                strokeWidth="1"
+              />
             ))}
           </g>
 
@@ -134,38 +140,6 @@ function LineChartMini({ title, color, series, height = 320 }) {
   );
 }
 
-
-// function normalizeSeries(raw) {
-//   const arr = Array.isArray(raw) ? raw : [];
-
-//   const out = arr
-//     .map((p) => {
-//       const rawX = p?.x ?? p?.ts ?? p?.time ?? p?.date;
-//       const rawY = p?.y ?? p?.value ?? p?.avg ?? p?.wpm ?? p?.accuracy;
-
-//       let x =
-//         typeof rawX === "number"
-//           ? rawX
-//           : typeof rawX === "string"
-//           ? Date.parse(rawX)
-//           : NaN;
-
-//       let y =
-//         typeof rawY === "number"
-//           ? rawY
-//           : typeof rawY === "string"
-//           ? Number(rawY)
-//           : NaN;
-
-//       return { x, y };
-//     })
-//     .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
-//     .sort((a, b) => a.x - b.x);
-
-//   return out;
-// }
-
-
 export default function Stats() {
   const { sessions } = useStats();
 
@@ -183,20 +157,40 @@ export default function Stats() {
   const lessonAgg = useMemo(() => computeAggregates(lessonSessions), [lessonSessions]);
   const gameAgg = useMemo(() => computeAggregates(gameSessions), [gameSessions]);
 
-    
-    const wpmSeries = useMemo(() => seriesBySession(sessions ?? [], "wpm"), [sessions]);
-    const accSeries = useMemo(() => seriesBySession(sessions ?? [], "accuracy"), [sessions]);
+  const wpmSeries = useMemo(() => seriesBySession(sessions ?? [], "wpm"), [sessions]);
+  const accSeries = useMemo(() => seriesBySession(sessions ?? [], "accuracy"), [sessions]);
 
+  /** ✅ НОВЕ: скидання статистики */
+  const onResetStats = useCallback(() => {
+    const ok = window.confirm("Скинути всю статистику? Це видалить всі сесії без можливості відновлення.");
+    if (!ok) return;
 
+    clearSessions();       // чистимо localStorage
+    emitStatsUpdate();     // пушимо апдейт, щоб useStats перезчитав
+  }, []);
 
   return (
     <div
       className="relative w-full min-h-screen p-8 text-cyan-300 font-mono"
       style={{ backgroundColor: NEO_DARK }}
     >
-      <h1 className="text-4xl font-extrabold text-white mb-10 tracking-wider text-center">
-        PERFORMANCE ANALYSIS
-      </h1>
+      <div className="max-w-6xl mx-auto mb-6 flex items-center justify-between gap-4">
+        <h1 className="text-4xl font-extrabold text-white tracking-wider">
+          PERFORMANCE ANALYSIS
+        </h1>
+
+        <button
+          onClick={onResetStats}
+          className="
+            px-4 py-2 rounded-lg font-bold
+            border border-red-500/50 text-red-300
+            hover:bg-red-500/10 transition
+            shadow-[0_0_18px_rgba(255,0,80,0.12)]
+          "
+        >
+          Reset Stats
+        </button>
+      </div>
 
       <section className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
         <div className="col-span-2">
@@ -220,22 +214,21 @@ export default function Stats() {
 
       <section className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
         <div className="col-span-2">
-            <LineChartMini
+          <LineChartMini
             title="WPM Progression Over Time"
             color={NEO_BLUE}
             series={wpmSeries}
             height={320}
-            />
+          />
         </div>
 
         <LineChartMini
-            title="Accuracy Trends"
-            color={NEO_PINK}
-            series={accSeries}
-            height={320}
+          title="Accuracy Trends"
+          color={NEO_PINK}
+          series={accSeries}
+          height={320}
         />
-        </section>
-
+      </section>
 
       <section className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatMetricCard
@@ -259,14 +252,6 @@ export default function Stats() {
           color={NEO_PINK}
         />
       </section>
-
-      <pre className="max-w-6xl mx-auto mt-10 text-xs text-gray-400 overflow-auto">
-        {JSON.stringify(
-            { wpmSeries, accSeries },
-            null,
-            2
-        )}
-      </pre>
     </div>
   );
 }

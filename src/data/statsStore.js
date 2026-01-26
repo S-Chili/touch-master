@@ -38,13 +38,14 @@ export function saveSessions(list) {
 export function addSession(session) {
   const normalized = normalizeSession(session);
   const prev = loadSessions();
-  const next = [normalized, ...prev].slice(0, 2000); // ліміт
+  const next = [normalized, ...prev].slice(0, 2000);
   saveSessions(next);
   return next;
 }
 
 export function clearSessions() {
   localStorage.removeItem(STORAGE_KEY);
+  return [];
 }
 
 export function computeAggregates(sessions) {
@@ -56,7 +57,7 @@ export function computeAggregates(sessions) {
     totalRuns === 0
       ? 0
       : Math.round(
-          list.reduce((sum, s) => sum + safeNumber(s.wpm, 0), 0) / totalRuns
+          list.reduce((sum, s) => sum + safeNumber(s.wpm, 0), 0) / totalRuns,
         );
 
   const avgAccuracy =
@@ -65,7 +66,7 @@ export function computeAggregates(sessions) {
       : Math.round(
           (list.reduce((sum, s) => sum + safeNumber(s.accuracy, 100), 0) /
             totalRuns) *
-            10
+            10,
         ) / 10;
 
   const bestWpm =
@@ -111,4 +112,18 @@ export function seriesBySession(sessions, field = "wpm") {
     .map((s) => ({ x: s.createdAt, y: safeNumber(s[field], 0) }))
     .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
     .sort((a, b) => a.x - b.x);
+}
+
+export function getSessions() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+export function setSessions(next) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(next ?? []));
 }
