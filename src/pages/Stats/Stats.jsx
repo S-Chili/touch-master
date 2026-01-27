@@ -1,6 +1,11 @@
 import React, { useMemo, useCallback } from "react";
 import useStats from "../../hooks/useStats";
-import { computeAggregates, seriesBySession, clearSessions } from "../../data/statsStore";
+import { useSettings } from "../../context/useSettings";
+import {
+  computeAggregates,
+  seriesBySession,
+  clearSessions,
+} from "../../data/statsStore";
 import { emitStatsUpdate } from "../../data/statsEvents";
 
 const NEO_BLUE = "#00eaff";
@@ -37,7 +42,10 @@ const StatMetricCard = ({ title, value, unit, color }) => (
       boxShadow: `0 0 18px ${color}22`,
     }}
   >
-    <div className="text-sm font-semibold tracking-wider uppercase mb-1" style={{ color }}>
+    <div
+      className="text-sm font-semibold tracking-wider uppercase mb-1"
+      style={{ color }}
+    >
       {title}
     </div>
 
@@ -69,7 +77,7 @@ function mapToScreenPoints(series, width, height, pad = 18) {
   });
 }
 
-function LineChartMini({ title, color, series, height = 320 }) {
+function LineChartMini({ title, color, series, height = 320, emptyText }) {
   const w = 900;
   const h = height;
 
@@ -90,14 +98,19 @@ function LineChartMini({ title, color, series, height = 320 }) {
       className="w-full p-4 rounded-xl bg-black/50 backdrop-blur-sm border"
       style={{ borderColor: `${color}55`, boxShadow: `0 0 20px ${color}1a` }}
     >
-      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2" style={{ color }}>
+      <h3
+        className="text-lg font-semibold mb-3 flex items-center gap-2"
+        style={{ color }}
+      >
         <IconChart color={color} /> {title}
-        <span className="ml-auto text-xs text-gray-400">last: {Math.round(last)}</span>
+        <span className="ml-auto text-xs text-gray-400">
+          last: {Math.round(last)}
+        </span>
       </h3>
 
       {!screen.length ? (
         <div className="h-80 flex items-center justify-center text-gray-500">
-          No data yet (play a lesson/game to generate sessions)
+          {emptyText}
         </div>
       ) : (
         <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-80">
@@ -141,6 +154,37 @@ function LineChartMini({ title, color, series, height = 320 }) {
 }
 
 export default function Stats() {
+  const { language } = useSettings();
+  const isUK = language === "uk";
+
+  const t = useMemo(
+    () => ({
+      title: isUK ? "АНАЛІЗ ПРОДУКТИВНОСТІ" : "PERFORMANCE ANALYSIS",
+      reset: isUK ? "Скинути статистику" : "Reset Stats",
+
+      confirmReset: isUK
+        ? "Скинути всю статистику? Це видалить всі сесії без можливості відновлення."
+        : "Reset all stats? This will delete all sessions and cannot be undone.",
+
+      avgSpeedAll: isUK ? "Середня швидкість (всього)" : "Average Speed (All)",
+      avgAccAll: isUK ? "Середня точність (всього)" : "Average Accuracy (All)",
+      bestWpmAll: isUK ? "Найкращий WPM (всього)" : "Best WPM (All)",
+      totalRunsAll: isUK ? "Всього спроб (всього)" : "Total Runs (All)",
+      runsSplit: isUK ? "Розподіл спроб" : "Runs Split",
+
+      wpmChart: isUK ? "Прогрес WPM з часом" : "WPM Progression Over Time",
+      accChart: isUK ? "Тренд точності" : "Accuracy Trends",
+
+      emptyChart: isUK
+        ? "Ще немає даних (зіграй урок/гру, щоб зʼявились сесії)"
+        : "No data yet (play a lesson/game to generate sessions)",
+
+      runsUnit: isUK ? "спроб" : "runs",
+      splitUnit: isUK ? "уроки/ігри" : "lessons/games",
+    }),
+    [isUK]
+  );
+
   const { sessions } = useStats();
 
   const lessonSessions = useMemo(
@@ -154,20 +198,28 @@ export default function Stats() {
   );
 
   const allAgg = useMemo(() => computeAggregates(sessions ?? []), [sessions]);
-  const lessonAgg = useMemo(() => computeAggregates(lessonSessions), [lessonSessions]);
+  const lessonAgg = useMemo(
+    () => computeAggregates(lessonSessions),
+    [lessonSessions]
+  );
   const gameAgg = useMemo(() => computeAggregates(gameSessions), [gameSessions]);
 
-  const wpmSeries = useMemo(() => seriesBySession(sessions ?? [], "wpm"), [sessions]);
-  const accSeries = useMemo(() => seriesBySession(sessions ?? [], "accuracy"), [sessions]);
+  const wpmSeries = useMemo(
+    () => seriesBySession(sessions ?? [], "wpm"),
+    [sessions]
+  );
+  const accSeries = useMemo(
+    () => seriesBySession(sessions ?? [], "accuracy"),
+    [sessions]
+  );
 
-  /** ✅ НОВЕ: скидання статистики */
   const onResetStats = useCallback(() => {
-    const ok = window.confirm("Скинути всю статистику? Це видалить всі сесії без можливості відновлення.");
+    const ok = window.confirm(t.confirmReset);
     if (!ok) return;
 
-    clearSessions();       // чистимо localStorage
-    emitStatsUpdate();     // пушимо апдейт, щоб useStats перезчитав
-  }, []);
+    clearSessions();
+    emitStatsUpdate();
+  }, [t.confirmReset]);
 
   return (
     <div
@@ -176,7 +228,7 @@ export default function Stats() {
     >
       <div className="max-w-6xl mx-auto mb-6 flex items-center justify-between gap-4">
         <h1 className="text-4xl font-extrabold text-white tracking-wider">
-          PERFORMANCE ANALYSIS
+          {t.title}
         </h1>
 
         <button
@@ -188,14 +240,14 @@ export default function Stats() {
             shadow-[0_0_18px_rgba(255,0,80,0.12)]
           "
         >
-          Reset Stats
+          {t.reset}
         </button>
       </div>
 
       <section className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
         <div className="col-span-2">
           <StatMetricCard
-            title="Average Speed (All)"
+            title={t.avgSpeedAll}
             value={allAgg.avgWpm}
             unit="WPM"
             color={NEO_BLUE}
@@ -204,7 +256,7 @@ export default function Stats() {
 
         <div className="col-span-2">
           <StatMetricCard
-            title="Average Accuracy (All)"
+            title={t.avgAccAll}
             value={allAgg.avgAccuracy}
             unit="%"
             color={NEO_PINK}
@@ -215,40 +267,42 @@ export default function Stats() {
       <section className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
         <div className="col-span-2">
           <LineChartMini
-            title="WPM Progression Over Time"
+            title={t.wpmChart}
             color={NEO_BLUE}
             series={wpmSeries}
             height={320}
+            emptyText={t.emptyChart}
           />
         </div>
 
         <LineChartMini
-          title="Accuracy Trends"
+          title={t.accChart}
           color={NEO_PINK}
           series={accSeries}
           height={320}
+          emptyText={t.emptyChart}
         />
       </section>
 
       <section className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatMetricCard
-          title="Best WPM (All)"
+          title={t.bestWpmAll}
           value={allAgg.bestWpm}
           unit="WPM"
           color={NEO_PURPLE}
         />
 
         <StatMetricCard
-          title="Total Runs (All)"
+          title={t.totalRunsAll}
           value={allAgg.totalRuns}
-          unit="runs"
+          unit={t.runsUnit}
           color={NEO_BLUE}
         />
 
         <StatMetricCard
-          title="Runs Split"
+          title={t.runsSplit}
           value={`${lessonAgg.totalRuns} / ${gameAgg.totalRuns}`}
-          unit="lessons/games"
+          unit={t.splitUnit}
           color={NEO_PINK}
         />
       </section>
