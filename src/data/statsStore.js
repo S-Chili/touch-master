@@ -88,19 +88,25 @@ export function groupDailySeries(sessions, field = "wpm") {
 
   const map = new Map();
   for (const s of list) {
-    const k = dayKey(s.createdAt);
+    const date = dayKey(s.createdAt);
     const v = safeNumber(s[field], 0);
 
-    const prev = map.get(k) ?? { sum: 0, count: 0 };
-    map.set(k, { sum: prev.sum + v, count: prev.count + 1 });
+    const prev = map.get(date) ?? { sum: 0, count: 0 };
+    map.set(date, { sum: prev.sum + v, count: prev.count + 1 });
   }
 
   const out = Array.from(map.entries())
-    .map(([date, { sum, count }]) => ({
-      date,
-      value: count ? Math.round((sum / count) * 10) / 10 : 0,
-      count,
-    }))
+    .map(([date, { sum, count }]) => {
+      const value = count ? Math.round((sum / count) * 10) / 10 : 0;
+
+      return {
+        date,
+        value,
+        count,
+        x: Date.parse(date),
+        y: value,
+      };
+    })
     .sort((a, b) => a.date.localeCompare(b.date));
 
   return out;

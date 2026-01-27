@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { useSettings } from "../../context/useSettings";
 import NeonKeyboard from "../../components/NeonKeyboard.jsx";
 import useStats from "../../hooks/useStats";
-import { computeAggregates, groupDailySeries } from "../../data/statsStore";
+import { computeAggregates, groupDailySeries, seriesBySession } from "../../data/statsStore";
 
 const NEO_BLUE = "#00eaff";
 const NEO_PINK = "#ff00e6";
@@ -132,15 +132,54 @@ const MiniLineChart = ({ series, stroke = NEO_BLUE }) => {
       .filter((p) => Number.isFinite(p.y));
   }, [series]);
 
-  const points = useMemo(() => toPoints(safeSeries, w, h), [safeSeries]);
-
-  if (!safeSeries.length || !points) {
+  if (!safeSeries.length) {
     return (
       <div className="w-full h-24 rounded bg-linear-to-r from-cyan-500/6 to-pink-500/6 flex items-center justify-center text-xs text-gray-500">
         No data yet
       </div>
     );
   }
+
+  if (safeSeries.length === 1) {
+    const y = safeSeries[0].y;
+
+    return (
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-24">
+        <text x="10" y="18" fontSize="10" fill="rgba(255,255,255,0.35)">
+          1 day
+        </text>
+
+        <circle
+          cx={w / 2}
+          cy={h / 2}
+          r="6"
+          fill={stroke}
+          opacity="0.95"
+        />
+        <text
+          x={w / 2}
+          y={h / 2 + 22}
+          textAnchor="middle"
+          fontSize="10"
+          fill="rgba(255,255,255,0.55)"
+        >
+          {Math.round(y)}
+        </text>
+      </svg>
+    );
+  }
+
+   const points = toPoints(safeSeries, w, h, 10);
+  if (!points) {
+    return (
+      <div className="w-full h-24 rounded bg-linear-to-r from-cyan-500/6 to-pink-500/6 flex items-center justify-center text-xs text-gray-500">
+        No data yet
+      </div>
+    );
+  }
+
+  const lastPoint = points.split(" ").slice(-1)[0];
+  const [lastX, lastY] = lastPoint.split(",");
 
   return (
     <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-24">
@@ -152,16 +191,11 @@ const MiniLineChart = ({ series, stroke = NEO_BLUE }) => {
         strokeLinecap="round"
         points={points}
       />
-      {/* last dot */}
-      <circle
-        cx={points.split(" ").slice(-1)[0].split(",")[0]}
-        cy={points.split(" ").slice(-1)[0].split(",")[1]}
-        r="4"
-        fill={stroke}
-      />
+      <circle cx={lastX} cy={lastY} r="4" fill={stroke} />
     </svg>
   );
 };
+
 
 const StatsPanel = ({
   isUK,
@@ -291,10 +325,22 @@ const Dashboard = () => {
   const gameAgg = useMemo(() => computeAggregates(gameSessions), [gameSessions]);
 
   
-  const wpmSeries = useMemo(() => {
-    const s = groupDailySeries(safeSessions, "wpm") ?? [];
-    return s.slice(-14);
-  }, [safeSessions]);
+ const wpmSeries = useMemo(() => {
+  const days = new Set(
+    safeSessions.map(s =>
+      new Date(s.createdAt).toISOString().slice(0, 10)
+    )
+  );
+
+  if (days.size <= 1) {
+    return seriesBySession(safeSessions, "wpm").slice(-20);
+  }
+
+  return groupDailySeries(safeSessions, "wpm").slice(-14);
+}, [safeSessions]);
+
+
+
 
   const streak = useMemo(() => {
     const days = new Set(
@@ -374,7 +420,6 @@ const Dashboard = () => {
               <div className="w-full rounded bg-linear-to-r from-cyan-500/6 to-pink-500/6">
                 <MiniLineChart series={wpmSeries} stroke={NEO_BLUE} />
               </div>
-
               <div className="mt-2 text-[11px] text-gray-500 flex justify-between">
                 <span>last 14 days</span>
                 <span>best: {allAgg?.bestWpm ?? 0}</span>
