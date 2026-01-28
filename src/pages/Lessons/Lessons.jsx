@@ -1,7 +1,12 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import lessons from "../../data/lessonData";
 import { useSettings } from "../../context/useSettings";
+import {
+  onLessonProgressUpdate,
+  loadLessonProgress,
+  setLastStartedLesson,
+} from "../../data/lessonProgressStore";
 
 const NEO_BLUE = "#00eaff";
 const NEO_PINK = "#ff00e6";
@@ -26,7 +31,7 @@ const IconBook = () => (
   </svg>
 );
 
-const CurrentLessonCard = ({ lessonNumber, title }) => (
+const CurrentLessonCard = ({ lessonNumber, title, subtitle }) => (
   <div
     className="w-full max-w-lg mx-auto p-8 rounded-2xl border-2 bg-black/50 text-center"
     style={{
@@ -48,53 +53,159 @@ const CurrentLessonCard = ({ lessonNumber, title }) => (
     >
       {title}
     </h2>
+
+    {subtitle ? <div className="text-sm text-gray-400 mt-3">{subtitle}</div> : null}
   </div>
 );
 
-const LessonItem = ({ number, title, isUK }) => (
-  <Link
-    to={`/lessons/${number}`}
-    className="p-4 rounded-xl border transition-all duration-300 flex items-center space-x-4 opacity-100 hover:border-white cursor-pointer bg-black/30"
-    style={{
-      borderColor: NEO_BLUE,
-      boxShadow: "0 0 15px rgba(0,234,255,0.15)",
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.boxShadow = "0 0 25px rgba(0,234,255,0.5)";
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.boxShadow = "0 0 15px rgba(0,234,255,0.15)";
-    }}
-  >
-    <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 border border-current text-white text-sm font-bold">
-      {number}
-    </div>
+const LessonItem = ({ number, title, isUK, active }) => {
+  const baseClass =
+    "p-4 rounded-xl border transition-all duration-300 flex items-center space-x-4 bg-black/30";
 
-    <div>
-      <div className="text-xs text-gray-400">
-        {isUK ? `Урок ${number}` : `Lesson ${number}`}
+  if (!active) {
+    return (
+      <div
+        className={`${baseClass} opacity-35 cursor-not-allowed`}
+        style={{
+          borderColor: NEO_BLUE,
+          boxShadow: "0 0 15px rgba(0,234,255,0.08)",
+        }}
+      >
+        <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 border border-current text-white text-sm font-bold">
+          {number}
+        </div>
+
+        <div className="flex-1">
+          <div className="text-xs text-gray-500">
+            {isUK ? `Урок ${number}` : `Lesson ${number}`}
+          </div>
+          <div className="text-md font-semibold text-gray-400">{title}</div>
+        </div>
+
+        <div className="text-[10px] text-gray-500 uppercase tracking-widest">Locked</div>
       </div>
-      <div className="text-md font-semibold text-white">{title}</div>
-    </div>
-  </Link>
-);
+    );
+  }
+
+  return (
+    <Link
+      to={`/lessons/${number}`}
+      className={`${baseClass} opacity-100 hover:border-white cursor-pointer`}
+      style={{
+        borderColor: NEO_BLUE,
+        boxShadow: "0 0 15px rgba(0,234,255,0.15)",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.boxShadow = "0 0 25px rgba(0,234,255,0.5)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.boxShadow = "0 0 15px rgba(0,234,255,0.15)";
+      }}
+    >
+      <div className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 border border-current text-white text-sm font-bold">
+        {number}
+      </div>
+
+      <div>
+        <div className="text-xs text-gray-400">
+          {isUK ? `Урок ${number}` : `Lesson ${number}`}
+        </div>
+        <div className="text-md font-semibold text-white">{title}</div>
+      </div>
+    </Link>
+  );
+};
 
 export default function Lessons() {
   const { language } = useSettings();
   const isUK = language === "uk";
 
+  const [progress, setProgress] = useState(() => loadLessonProgress());
+
   const list = useMemo(() => {
     const arr = Array.isArray(lessons) ? lessons : [];
     return arr
       .map((l) => ({
-        number: l.id,
+        number: Number(l.id),
         title: isUK ? l.titleUk : l.titleEn,
         description: isUK ? l.descriptionUk : l.descriptionEn,
       }))
+      .filter((l) => Number.isFinite(l.number))
       .sort((a, b) => a.number - b.number);
   }, [isUK]);
 
-  const currentLesson = list.find((l) => l.number === 4);
+  const completedSet = useMemo(() => new Set(progress.completed ?? []), [progress.completed]);
+
+  const totalLessons = list.length;
+
+  const consecutiveDone = useMemo(() => {
+    let n = 0;
+    for (let i = 1; i <= totalLessons; i++) {
+      if (!completedSet.has(i)) break;
+      n++;
+    }
+    return n;
+  }, [completedSet, totalLessons]);
+
+
+const allUnlocked = consecutiveDone >= totalLessons;
+
+const isActiveLesson = useCallback(
+  (num) => (allUnlocked ? true : num <= consecutiveDone + 1),
+  [allUnlocked, consecutiveDone]
+);
+
+  const currentLessonNumber = useMemo(() => {
+  const last = progress.lastStarted;
+
+  if (Number.isFinite(last) && last >= 1 && last <= totalLessons) {
+    if (!completedSet.has(last)) return last;
+  }
+
+  const next = Math.min(consecutiveDone + 1, totalLessons);
+  return next;
+}, [progress.lastStarted, completedSet, consecutiveDone, totalLessons]);
+
+const currentLesson = useMemo(
+  () => list.find((l) => l.number === currentLessonNumber),
+  [list, currentLessonNumber]
+);
+
+useEffect(() => {
+  const off = onLessonProgressUpdate(() => {
+    setProgress(loadLessonProgress());
+  });
+
+  const onFocus = () => setProgress(loadLessonProgress());
+  window.addEventListener("focus", onFocus);
+
+  return () => {
+    off();
+    window.removeEventListener("focus", onFocus);
+  };
+}, []);
+
+
+  const subtitle = useMemo(() => {
+    if (!currentLesson) return "";
+    const done = completedSet.has(currentLesson.number);
+
+    if (consecutiveDone >= 9) {
+      return isUK ? "Всі уроки відкриті ✅" : "All lessons unlocked ✅";
+    }
+
+    if (done) {
+      return isUK ? "Урок пройдено. Переходимо далі →" : "Completed. Moving on →";
+    }
+
+    return isUK ? "Пройди урок, щоб відкрити наступний" : "Finish to unlock the next lesson";
+  }, [currentLesson, completedSet, consecutiveDone, isUK]);
+
+  const onOpenLesson = useCallback((num) => {
+  setLastStartedLesson(num);
+  setProgress(loadLessonProgress());
+}, []);
+
 
   return (
     <div
@@ -110,12 +221,14 @@ export default function Lessons() {
           <CurrentLessonCard
             lessonNumber={currentLesson.number}
             title={currentLesson.title}
+            subtitle={subtitle}
           />
         )}
 
         {currentLesson && (
           <Link
             to={`/lessons/${currentLesson.number}`}
+            onClick={() => onOpenLesson(currentLesson.number)}
             className="mt-8 px-10 py-3 text-xl font-bold rounded-lg border-2 transition-all duration-300 active:scale-95"
             style={{
               borderColor: NEO_BLUE,
@@ -143,13 +256,15 @@ export default function Lessons() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {list.map((lesson) => (
-            <LessonItem
-              key={lesson.number}
-              number={lesson.number}
-              title={lesson.title}
-              isUK={isUK}
-            />
-          ))}
+  <LessonItem
+    key={lesson.number}
+    number={lesson.number}
+    title={lesson.title}
+    isUK={isUK}
+    active={isActiveLesson(lesson.number)}
+  />
+))}
+
         </div>
       </div>
     </div>

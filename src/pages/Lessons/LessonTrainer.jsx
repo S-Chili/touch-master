@@ -5,6 +5,8 @@ import { KEYBOARD_ROWS } from "../../data/keyboardLayouts";
 import { addSession } from "../../data/statsStore";
 import { emitStatsUpdate } from "../../data/statsEvents";
 import { useSettings } from "../../context/useSettings";
+import { setLastStartedLesson, markLessonCompleted } from "../../data/lessonProgressStore";
+
 
 const PASS_ACCURACY = 90;
 
@@ -120,6 +122,8 @@ export default function LessonTrainer({ config }) {
   const savedRef = useRef(false);
   const finishedRef = useRef(false);
   const flashTimeoutRef = useRef(null);
+  const lessonIdNum = useMemo(() => Number(id), [id]);
+  const progressSavedRef = useRef(false);
 
   const shiftHeldRef = useRef({ left: false, right: false });
 
@@ -127,6 +131,11 @@ export default function LessonTrainer({ config }) {
     finishedRef.current = lessonFinished;
   }, [lessonFinished]);
 
+  useEffect(() => {
+  if (!Number.isFinite(lessonIdNum)) return;
+  setLastStartedLesson(lessonIdNum);
+  }, [lessonIdNum]);
+  
   const accuracy = useMemo(() => {
     const total = correctPresses + mistakes;
     return total === 0 ? 100 : Math.round((correctPresses / total) * 100);
@@ -158,6 +167,28 @@ export default function LessonTrainer({ config }) {
     return arr;
   }, [currentTarget]);
 
+  const persistProgressOnce = useCallback(() => {
+  if (progressSavedRef.current) return;
+
+  setLastStartedLesson(id);
+
+  if (lessonFinished && passed) {
+    markLessonCompleted(id);
+  }
+
+  progressSavedRef.current = true;
+  }, [id, lessonFinished, passed]);
+  
+  useEffect(() => {
+  setLastStartedLesson(id);
+}, [id]);
+
+  useEffect(() => {
+  if (!lessonFinished) return;
+  persistProgressOnce();
+}, [lessonFinished, persistProgressOnce]);
+
+
   const generateNext = useCallback(
     (idx) => {
       const list = normStages[idx] ?? [];
@@ -180,25 +211,40 @@ export default function LessonTrainer({ config }) {
     return () => window.clearInterval(interval);
   }, [startTime, lessonFinished]);
 
-  useEffect(() => {
-    if (!lessonFinished) return;
-    if (savedRef.current) return;
-    savedRef.current = true;
+useEffect(() => {
+  if (!lessonFinished) return;
+  if (savedRef.current) return;
+  savedRef.current = true;
 
-    addSession({
-      mode: "lesson",
-      id,
-      wpm,
-      accuracy,
-      timeMs: elapsedMs,
-      correct: correctPresses,
-      mistakes,
-      score: progress,
-      createdAt: Date.now(),
-    });
+  addSession({
+    mode: "lesson",
+    id,
+    wpm,
+    accuracy,
+    timeMs: elapsedMs,
+    correct: correctPresses,
+    mistakes,
+    score: progress,
+    createdAt: Date.now(),
+  });
 
-    emitStatsUpdate();
-  }, [lessonFinished, id, wpm, accuracy, elapsedMs, correctPresses, mistakes, progress]);
+  if (passed && Number.isFinite(lessonIdNum)) {
+    markLessonCompleted(lessonIdNum);
+  }
+
+  emitStatsUpdate();
+}, [
+  lessonFinished,
+  id,
+  wpm,
+  accuracy,
+  elapsedMs,
+  correctPresses,
+  mistakes,
+  progress,
+  passed,
+  lessonIdNum,
+]);
 
   const flashError = useCallback(() => {
     setKeyboardErrorFlash(true);
@@ -315,6 +361,7 @@ export default function LessonTrainer({ config }) {
     setCurrentTarget(null);
     setKeyboardErrorFlash(false);
     savedRef.current = false;
+    progressSavedRef.current = false;
 
     shiftHeldRef.current.left = false;
     shiftHeldRef.current.right = false;
@@ -381,7 +428,8 @@ export default function LessonTrainer({ config }) {
 
       {lessonFinished && (
         <div className="mt-6 text-gray-300">
-          {passed ? "✅ Passed" : "❌ Not passed"} · {isUK ? "Точність" : "Accuracy"} {accuracy}%
+          {passed ? (isUK ? "✅ Пройдено" : "✅ Passed") : (isUK ? "❌ Не пройдено" : "❌ Not passed")}
+ · {isUK ? "Точність" : "Accuracy"} {accuracy}%
           <div className="mt-3 flex gap-3 justify-center">
             <button
               onClick={resetLesson}
@@ -390,7 +438,10 @@ export default function LessonTrainer({ config }) {
               {isUK ? "Ще раз" : "Retry"}
             </button>
             <button
-              onClick={() => navigate("/lessons")}
+              onClick={() => {
+                persistProgressOnce();
+                navigate("/lessons");
+              }}
               className="px-6 py-3 rounded-xl border border-cyan-400/60 text-cyan-200 hover:bg-cyan-400/10"
             >
               {isUK ? "До уроків" : "Lessons"}

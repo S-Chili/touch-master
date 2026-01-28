@@ -17,7 +17,7 @@ export default function Lesson2() {
 
   const config = useMemo(
     () => ({
-      id: 1,
+      id: 2,
 
       stages: [
         [

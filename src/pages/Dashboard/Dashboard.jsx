@@ -1,8 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useState } from "react";
 import { useSettings } from "../../context/useSettings";
 import NeonKeyboard from "../../components/NeonKeyboard.jsx";
 import useStats from "../../hooks/useStats";
 import { computeAggregates, groupDailySeries, seriesBySession } from "../../data/statsStore";
+import { loadLessonProgress, onLessonProgressUpdate } from "../../data/lessonProgressStore";
 
 const NEO_BLUE = "#00eaff";
 const NEO_PINK = "#ff00e6";
@@ -122,6 +123,7 @@ const Segmented = ({ value, onChange, options }) => (
 
 
 const MiniLineChart = ({ series, stroke = NEO_BLUE }) => {
+  
   const w = 240;
   const h = 90;
 
@@ -196,7 +198,6 @@ const MiniLineChart = ({ series, stroke = NEO_BLUE }) => {
   );
 };
 
-
 const StatsPanel = ({
   isUK,
   allAgg,
@@ -206,8 +207,10 @@ const StatsPanel = ({
   setLanguage,
   layout,
   setLayout,
+  lastCompletedLessonId,
 }) => {
-  const level = Math.max(1, Math.min(99, (lessonAgg?.totalRuns ?? 0) + 1));
+  const level = Number.isFinite(lastCompletedLessonId) ? lastCompletedLessonId : 0;
+
 
   return (
     <div className="w-full rounded-xl p-4 bg-black/60 border border-cyan-600/30 backdrop-blur shadow-[0_0_20px_rgba(0,234,255,0.18)] mb-6">
@@ -308,6 +311,30 @@ const Dashboard = () => {
 
   const { sessions } = useStats();
 
+    const [lessonProgress, setLessonProgress] = useState(() => loadLessonProgress());
+
+  useEffect(() => {
+    const off = onLessonProgressUpdate(() => {
+      setLessonProgress(loadLessonProgress());
+    });
+
+    const onFocus = () => setLessonProgress(loadLessonProgress());
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      off?.();
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
+
+  const lastCompletedLessonId = useMemo(() => {
+    const completed = Array.isArray(lessonProgress?.completed)
+      ? lessonProgress.completed
+      : [];
+    const nums = completed.map(Number).filter(Number.isFinite);
+    return nums.length ? Math.max(...nums) : 0;
+  }, [lessonProgress]);
+
   const safeSessions = useMemo(() => (Array.isArray(sessions) ? sessions : []), [sessions]);
 
   const lessonSessions = useMemo(
@@ -338,9 +365,6 @@ const Dashboard = () => {
 
   return groupDailySeries(safeSessions, "wpm").slice(-14);
 }, [safeSessions]);
-
-
-
 
   const streak = useMemo(() => {
     const days = new Set(
@@ -406,8 +430,8 @@ const Dashboard = () => {
             setLanguage={setLanguage}
             layout={layout}
             setLayout={setLayout}
+            lastCompletedLessonId={lastCompletedLessonId}
           />
-
           <section className="grid grid-cols-1 gap-6 mb-12">
             <div className="bg-black/40 border border-cyan-700/20 rounded-xl p-4 shadow-[0_0_18px_rgba(0,234,255,0.04)]">
               <h3 className="text-cyan-300 text-lg mb-3 flex items-center gap-2">
