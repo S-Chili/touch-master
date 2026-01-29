@@ -256,15 +256,14 @@ useEffect(() => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {list.map((lesson) => (
-  <LessonItem
-    key={lesson.number}
-    number={lesson.number}
-    title={lesson.title}
-    isUK={isUK}
-    active={isActiveLesson(lesson.number)}
-  />
-))}
-
+        <LessonItem
+          key={lesson.number}
+          number={lesson.number}
+          title={lesson.title}
+          isUK={isUK}
+          active={isActiveLesson(lesson.number)}
+        />
+      ))}
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ import NeonKeyboard from "../../components/NeonKeyboard.jsx";
 import useStats from "../../hooks/useStats";
 import { computeAggregates, groupDailySeries, seriesBySession } from "../../data/statsStore";
 import { loadLessonProgress, onLessonProgressUpdate } from "../../data/lessonProgressStore";
+import { Link } from "react-router-dom";
 
 const NEO_BLUE = "#00eaff";
 const NEO_PINK = "#ff00e6";
@@ -404,8 +405,12 @@ const Dashboard = () => {
             </div>
 
             <div className="grid grid-cols-3 gap-5 mt-6">
-              <SmallButton label={isUK ? "РОЗІГРІВ" : "QUICK WARM-UP"} color="cyan" />
-              <SmallButton label={isUK ? "УРОКИ" : "LESSON PATH"} color="purple" />
+              <Link to="/dashboard/warmup" className="block">
+                <SmallButton label={isUK ? "РОЗІГРІВ" : "QUICK WARM-UP"} color="cyan" />
+              </Link>
+              <Link to="/lessons" className="block">
+                <SmallButton label={isUK ? "УРОКИ" : "LESSON PATH"} color="purple" />              
+              </Link>
               <SmallButton label={isUK ? "ВІЛЬНИЙ РЕЖИМ" : "FREE TYPING MODE"} color="pink" />
 
               <SmallButton label={isUK ? "CODING" : "CODING MODE"} color="cyan" />
