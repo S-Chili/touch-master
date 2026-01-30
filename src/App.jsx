@@ -1,4 +1,3 @@
-// src/App.jsx
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 
@@ -13,6 +12,8 @@ import AccuracyShield from "./pages/Games/AccuracyShield.jsx";
 import RaceAgainstTime from "./pages/Games/RaceAgainstTime.jsx";
 import MemoryMaze from './pages/Games/MemoryMaze.jsx';
 import WarmUp from './pages/Dashboard/WarmUp.jsx';
+import FreeTyping from './pages/Dashboard/FreeTyping.jsx';
+import About from './pages/Dashboard/About.jsx';
 function App() {
   return (
     <Routes>
@@ -24,8 +25,8 @@ function App() {
         <Route path="dashboard">
           <Route index element={<Dashboard />} />
           <Route path="warmup" element={<WarmUp />} />
-          {/* <Route path="accuracy" element={<AccuracyShield />} /> */}
-          {/* <Route path="memory" element={<MemoryMaze />} /> */}
+          <Route path="free-typing" element={<FreeTyping />} /> 
+          <Route path="about" element={<About />} />
         </Route>
         <Route path="lessons">
           <Route index element={<Lessons />} />        

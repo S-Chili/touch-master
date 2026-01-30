@@ -77,7 +77,7 @@ export default function HomePage() {
              linear-gradient(rgba(255,0,230,0.12)_1px,transparent_1px)]
         bg-size-[55px_55px]"
       ></div>
-      <nav className={`w-full flex justify-end gap-4 p-6 z-20 backdrop-blur-sm bg-white/5 border-b border-(--color-neo-blue)/40 shadow-[0_0_10px_rgba(0,234,255,0.2)]`}>
+      {/* <nav className={`w-full flex justify-end gap-4 p-6 z-20 backdrop-blur-sm bg-white/5 border-b border-(--color-neo-blue)/40 shadow-[0_0_10px_rgba(0,234,255,0.2)]`}>
         <button className={`px-6 py-2 border border-(--color-neo-pink) text-(--color-neo-pink) rounded-md shadow-[0_0_5px_var(--color-neo-pink)aa] hover:bg-(--color-neo-pink) hover:text-(--color-neo-dark) transition-all duration-300`}>
           Log in
         </button>
@@ -85,7 +85,7 @@ export default function HomePage() {
         <button className={`px-6 py-2 border border-(--color-neo-blue) text-(--color-neo-blue) rounded-md shadow-[0_0_5px_var(--color-neo-blue)aa] hover:bg-(--color-neo-blue) hover:text-(--color-neo-dark) transition-all duration-300`}>
           Sign up
         </button>
-      </nav>
+      </nav> */}
 
       <header className="flex flex-col items-center justify-center grow text-center px-6 z-10 select-none">
         <h1 className={`relative text-7xl sm:text-8xl font-extrabold text-(--color-neo-blue) drop-shadow-[0_0_5px_var(--color-neo-pink)aa] glitch`}>TOUCHMASTER</h1>

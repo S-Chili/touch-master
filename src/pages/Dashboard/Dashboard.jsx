@@ -411,9 +411,12 @@ const Dashboard = () => {
               <Link to="/lessons" className="block">
                 <SmallButton label={isUK ? "УРОКИ" : "LESSON PATH"} color="purple" />              
               </Link>
-              <SmallButton label={isUK ? "ВІЛЬНИЙ РЕЖИМ" : "FREE TYPING MODE"} color="pink" />
-
-              <SmallButton label={isUK ? "CODING" : "CODING MODE"} color="cyan" />
+              <Link to="/dashboard/free-typing" className="block">
+                <SmallButton label={isUK ? "ВІЛЬНИЙ РЕЖИМ" : "FREE TYPING MODE"} color="pink" />
+              </Link>
+            <Link to="/dashboard/about" className="block">
+                <SmallButton label={isUK ? "ПРО НАС" : "ABOUT US"} color="cyan" />
+              </Link>
               <SmallButton label={isUK ? "ТЕСТ" : "SPEED TEST"} color="pink" />
               <SmallButton label={isUK ? "ПОВТОР" : "REPEAT"} color="purple" />
             </div>
