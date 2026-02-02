@@ -7,7 +7,6 @@ import { emitStatsUpdate } from "../../data/statsEvents";
 import { useSettings } from "../../context/useSettings";
 import { setLastStartedLesson, markLessonCompleted } from "../../data/lessonProgressStore";
 
-
 const PASS_ACCURACY = 90;
 
 function formatTime(ms) {
@@ -36,22 +35,135 @@ function isObj(v) {
 }
 
 const LEFT_HAND = new Set([
-  "KeyQ","KeyW","KeyE","KeyR","KeyT",
-  "KeyA","KeyS","KeyD","KeyF","KeyG",
-  "KeyZ","KeyX","KeyC","KeyV","KeyB",
+  "KeyQ",
+  "KeyW",
+  "KeyE",
+  "KeyR",
+  "KeyT",
+  "KeyA",
+  "KeyS",
+  "KeyD",
+  "KeyF",
+  "KeyG",
+  "KeyZ",
+  "KeyX",
+  "KeyC",
+  "KeyV",
+  "KeyB",
 ]);
 const RIGHT_HAND = new Set([
-  "KeyY","KeyU","KeyI","KeyO","KeyP",
-  "KeyH","KeyJ","KeyK","KeyL",
-  "KeyN","KeyM",
-  "Semicolon","Quote","Comma","Period","Slash",
-  "BracketLeft","BracketRight",
+  "KeyY",
+  "KeyU",
+  "KeyI",
+  "KeyO",
+  "KeyP",
+  "KeyH",
+  "KeyJ",
+  "KeyK",
+  "KeyL",
+  "KeyN",
+  "KeyM",
+  "Semicolon",
+  "Quote",
+  "Comma",
+  "Period",
+  "Slash",
+  "BracketLeft",
+  "BracketRight",
 ]);
 
 function requiredOppositeShift(code) {
   if (LEFT_HAND.has(code)) return "right";
   if (RIGHT_HAND.has(code)) return "left";
   return "left";
+}
+
+function ResultModal({
+  open,
+  passed,
+  isUK,
+  accuracy,
+  wpm,
+  elapsedMs,
+  onRetry,
+  onBack,
+}) {
+  if (!open) return null;
+
+  const title = passed ? (isUK ? "Урок пройдено ✅" : "Lesson passed ✅") : (isUK ? "Урок не пройдено ❌" : "Lesson not passed ❌");
+  const subtitle = passed
+    ? (isUK ? "Відмінна робота. Рухаємося далі." : "Nice work. Keep going.")
+    : (isUK ? `Потрібно ${PASS_ACCURACY}%+ точності.` : `You need ${PASS_ACCURACY}%+ accuracy.`);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+      <div
+        className="relative w-full max-w-lg rounded-2xl border bg-black/70 p-6 shadow-[0_0_60px_rgba(0,234,255,0.10)]"
+        style={{ borderColor: passed ? "rgba(0,234,255,0.35)" : "rgba(255,0,230,0.35)" }}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="absolute -top-px left-10 right-10 h-px bg-linear-to-r from-transparent via-cyan-500/40 to-transparent" />
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-white text-xl font-extrabold tracking-wider">{title}</h3>
+            <p className="mt-1 text-gray-400">{subtitle}</p>
+          </div>
+
+          <div className="text-xs text-gray-500 tracking-widest uppercase">
+            {formatTime(elapsedMs)}
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-cyan-400/20 bg-black/40 p-3">
+            <div className="text-[10px] text-gray-500 tracking-widest uppercase">WPM</div>
+            <div className="mt-1 text-cyan-200 text-xl font-bold">{wpm}</div>
+          </div>
+
+          <div className="rounded-xl border border-pink-400/20 bg-black/40 p-3">
+            <div className="text-[10px] text-gray-500 tracking-widest uppercase">
+              {isUK ? "Точність" : "Accuracy"}
+            </div>
+            <div className="mt-1 text-pink-200 text-xl font-bold">{accuracy}%</div>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-black/40 p-3">
+            <div className="text-[10px] text-gray-500 tracking-widest uppercase">
+              {isUK ? "Поріг" : "Pass"}
+            </div>
+            <div className="mt-1 text-gray-200 text-xl font-bold">{PASS_ACCURACY}%</div>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
+          <button
+            onClick={onRetry}
+            className="px-5 py-3 rounded-xl border border-pink-500/60 text-pink-200 hover:bg-pink-500/10 transition"
+          >
+            {isUK ? "Ще раз" : "Retry"}
+          </button>
+
+          <button
+            onClick={onBack}
+            className="px-5 py-3 rounded-xl border border-cyan-400/60 text-cyan-200 hover:bg-cyan-400/10 transition"
+          >
+            {isUK ? "До уроків" : "Back to lessons"}
+          </button>
+        </div>
+
+        <div className="mt-4 text-[11px] text-gray-500">
+          {isUK ? "Порада:" : "Tip:"}{" "}
+          {passed
+            ? (isUK ? "Спробуй наступний урок або зроби розігрів." : "Try the next lesson or do a warm-up.")
+            : (isUK ? "Зменш швидкість і сфокусуйся на точності." : "Slow down and focus on accuracy.")}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function LessonTrainer({ config }) {
@@ -74,20 +186,23 @@ export default function LessonTrainer({ config }) {
   );
 
   const normStages = useMemo(() => {
-    return stages.map((stage) =>
-      (stage ?? []).map((it) => {
-        if (typeof it === "string") return { code: it, shift: false };
+    return stages
+      .map((stage) =>
+        (stage ?? [])
+          .map((it) => {
+            if (typeof it === "string") return { code: it, shift: false };
 
-        if (isObj(it)) {
-          const code = it.code;
-          let shift = it.shift ?? false;
-          if (shift === "opposite") shift = requiredOppositeShift(code);
-          return { code, shift }; 
-        }
+            if (isObj(it)) {
+              const code = it.code;
+              let shift = it.shift ?? false;
+              if (shift === "opposite") shift = requiredOppositeShift(code);
+              return { code, shift };
+            }
 
-        return null;
-      }).filter(Boolean)
-    );
+            return null;
+          })
+          .filter(Boolean)
+      );
   }, [stages]);
 
   const allowedCodes = useMemo(() => {
@@ -108,7 +223,7 @@ export default function LessonTrainer({ config }) {
 
   const [stageIndex, setStageIndex] = useState(0);
   const [completedInStage, setCompletedInStage] = useState(0);
-  const [currentTarget, setCurrentTarget] = useState(null); 
+  const [currentTarget, setCurrentTarget] = useState(null);
 
   const [mistakes, setMistakes] = useState(0);
   const [correctPresses, setCorrectPresses] = useState(0);
@@ -127,15 +242,17 @@ export default function LessonTrainer({ config }) {
 
   const shiftHeldRef = useRef({ left: false, right: false });
 
+  const [resultOpen, setResultOpen] = useState(false);
+
   useEffect(() => {
     finishedRef.current = lessonFinished;
   }, [lessonFinished]);
 
   useEffect(() => {
-  if (!Number.isFinite(lessonIdNum)) return;
-  setLastStartedLesson(lessonIdNum);
+    if (!Number.isFinite(lessonIdNum)) return;
+    setLastStartedLesson(lessonIdNum);
   }, [lessonIdNum]);
-  
+
   const accuracy = useMemo(() => {
     const total = correctPresses + mistakes;
     return total === 0 ? 100 : Math.round((correctPresses / total) * 100);
@@ -168,26 +285,22 @@ export default function LessonTrainer({ config }) {
   }, [currentTarget]);
 
   const persistProgressOnce = useCallback(() => {
-  if (progressSavedRef.current) return;
+    if (progressSavedRef.current) return;
 
-  setLastStartedLesson(id);
+    if (Number.isFinite(lessonIdNum)) setLastStartedLesson(lessonIdNum);
 
-  if (lessonFinished && passed) {
-    markLessonCompleted(id);
-  }
+    if (lessonFinished && passed && Number.isFinite(lessonIdNum)) {
+      markLessonCompleted(lessonIdNum);
+    }
 
-  progressSavedRef.current = true;
-  }, [id, lessonFinished, passed]);
-  
-  useEffect(() => {
-  setLastStartedLesson(id);
-}, [id]);
+    progressSavedRef.current = true;
+  }, [lessonFinished, passed, lessonIdNum]);
 
   useEffect(() => {
-  if (!lessonFinished) return;
-  persistProgressOnce();
-}, [lessonFinished, persistProgressOnce]);
-
+    if (!lessonFinished) return;
+    persistProgressOnce();
+    window.setTimeout(() => setResultOpen(true), 0);
+  }, [lessonFinished, persistProgressOnce]);
 
   const generateNext = useCallback(
     (idx) => {
@@ -211,40 +324,29 @@ export default function LessonTrainer({ config }) {
     return () => window.clearInterval(interval);
   }, [startTime, lessonFinished]);
 
-useEffect(() => {
-  if (!lessonFinished) return;
-  if (savedRef.current) return;
-  savedRef.current = true;
+  useEffect(() => {
+    if (!lessonFinished) return;
+    if (savedRef.current) return;
+    savedRef.current = true;
 
-  addSession({
-    mode: "lesson",
-    id,
-    wpm,
-    accuracy,
-    timeMs: elapsedMs,
-    correct: correctPresses,
-    mistakes,
-    score: progress,
-    createdAt: Date.now(),
-  });
+    addSession({
+      mode: "lesson",
+      id,
+      wpm,
+      accuracy,
+      timeMs: elapsedMs,
+      correct: correctPresses,
+      mistakes,
+      score: progress,
+      createdAt: Date.now(),
+    });
 
-  if (passed && Number.isFinite(lessonIdNum)) {
-    markLessonCompleted(lessonIdNum);
-  }
+    if (passed && Number.isFinite(lessonIdNum)) {
+      markLessonCompleted(lessonIdNum);
+    }
 
-  emitStatsUpdate();
-}, [
-  lessonFinished,
-  id,
-  wpm,
-  accuracy,
-  elapsedMs,
-  correctPresses,
-  mistakes,
-  progress,
-  passed,
-  lessonIdNum,
-]);
+    emitStatsUpdate();
+  }, [lessonFinished, id, wpm, accuracy, elapsedMs, correctPresses, mistakes, progress, passed, lessonIdNum]);
 
   const flashError = useCallback(() => {
     setKeyboardErrorFlash(true);
@@ -274,7 +376,7 @@ useEffect(() => {
 
       if (e.code === "ShiftLeft") {
         shiftHeldRef.current.left = true;
-        return; 
+        return;
       }
       if (e.code === "ShiftRight") {
         shiftHeldRef.current.right = true;
@@ -321,17 +423,7 @@ useEffect(() => {
         if (!finishedRef.current) generateNext(nextStageIndex);
       });
     },
-    [
-      allowedSet,
-      currentTarget,
-      stageIndex,
-      reps,
-      normStages.length,
-      totalTarget,
-      generateNext,
-      flashError,
-      isShiftOk,
-    ]
+    [allowedSet, currentTarget, stageIndex, reps, normStages.length, totalTarget, generateNext, flashError, isShiftOk]
   );
 
   const handleKeyUp = useCallback((e) => {
@@ -349,6 +441,8 @@ useEffect(() => {
   }, [handleKeyDown, handleKeyUp]);
 
   const resetLesson = useCallback(() => {
+    setResultOpen(false);
+
     setLessonFinished(false);
     finishedRef.current = false;
 
@@ -384,6 +478,15 @@ useEffect(() => {
     return null;
   }, [currentTarget, isUK]);
 
+  useEffect(() => {
+    if (!resultOpen) return;
+    const onEsc = (e) => {
+      if (e.key === "Escape") setResultOpen(false);
+    };
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [resultOpen]);
+
   return (
     <div className="text-center">
       <div className="flex justify-start mb-4">
@@ -409,7 +512,9 @@ useEffect(() => {
 
       <div className="flex justify-center gap-10 text-xl mb-6 font-bold">
         <div className="text-cyan-400">WPM: {wpm}</div>
-        <div className="text-pink-400">{isUK ? "Точність" : "Accuracy"}: {accuracy}%</div>
+        <div className="text-pink-400">
+          {isUK ? "Точність" : "Accuracy"}: {accuracy}%
+        </div>
       </div>
 
       {!!bigChar && (
@@ -426,32 +531,19 @@ useEffect(() => {
         errorFlash={keyboardErrorFlash}
       />
 
-      {lessonFinished && (
-        <div className="mt-6 text-gray-300">
-          {passed ? (isUK ? "✅ Пройдено" : "✅ Passed") : (isUK ? "❌ Не пройдено" : "❌ Not passed")}
- · {isUK ? "Точність" : "Accuracy"} {accuracy}%
-          <div className="mt-3 flex gap-3 justify-center">
-            <button
-              onClick={resetLesson}
-              className="px-6 py-3 rounded-xl border border-pink-500/60 text-pink-300 hover:bg-pink-500/10"
-            >
-              {isUK ? "Ще раз" : "Retry"}
-            </button>
-            <button
-              onClick={() => {
-                persistProgressOnce();
-                navigate("/lessons");
-              }}
-              className="px-6 py-3 rounded-xl border border-cyan-400/60 text-cyan-200 hover:bg-cyan-400/10"
-            >
-              {isUK ? "До уроків" : "Lessons"}
-            </button>
-          </div>
-          <div className="mt-2 text-xs text-gray-500">
-            Pass: Accuracy ≥ {PASS_ACCURACY}% · Time {formatTime(elapsedMs)}
-          </div>
-        </div>
-      )}
+      <ResultModal
+        open={resultOpen}
+        passed={passed}
+        isUK={isUK}
+        accuracy={accuracy}
+        wpm={wpm}
+        elapsedMs={elapsedMs}
+        onRetry={resetLesson}
+        onBack={() => {
+          persistProgressOnce();
+          navigate("/lessons");
+        }}
+      />
     </div>
   );
 }
