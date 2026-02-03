@@ -14,6 +14,8 @@ import MemoryMaze from './pages/Games/MemoryMaze.jsx';
 import WarmUp from './pages/Dashboard/WarmUp.jsx';
 import FreeTyping from './pages/Dashboard/FreeTyping.jsx';
 import About from './pages/Dashboard/About.jsx';
+import SpeedTest from './pages/Dashboard/SpeedTest.jsx';
+
 function App() {
   return (
     <Routes>
@@ -27,6 +29,7 @@ function App() {
           <Route path="warmup" element={<WarmUp />} />
           <Route path="free-typing" element={<FreeTyping />} /> 
           <Route path="about" element={<About />} />
+          <Route path="speed-test" element={<SpeedTest />} />
         </Route>
         <Route path="lessons">
           <Route index element={<Lessons />} />        

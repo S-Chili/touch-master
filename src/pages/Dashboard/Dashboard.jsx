@@ -417,7 +417,9 @@ const Dashboard = () => {
             <Link to="/dashboard/about" className="block">
                 <SmallButton label={isUK ? "ПРО НАС" : "ABOUT US"} color="cyan" />
               </Link>
-              <SmallButton label={isUK ? "ТЕСТ" : "SPEED TEST"} color="pink" />
+              <Link to="/dashboard/speed-test" className="block">
+                <SmallButton label={isUK ? "ТЕСТ" : "SPEED TEST"} color="pink" />
+              </Link>
               <SmallButton label={isUK ? "ПОВТОР" : "REPEAT"} color="purple" />
             </div>
           </section>
