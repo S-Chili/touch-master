@@ -4,6 +4,21 @@ import NeonKeyboard from "../../components/NeonKeyboard.jsx";
 import { addSession } from "../../data/statsStore";
 import { emitStatsUpdate } from "../../data/statsEvents";
 import { useSettings } from "../../context/useSettings";
+import { KEYBOARD_ROWS } from "../../data/keyboardLayouts";
+
+function buildCodeToLabelMap() {
+  const m = new Map();
+  for (const row of KEYBOARD_ROWS) {
+    for (const k of row) {
+      if (!k.code) continue;
+      m.set(k.code, {
+        en: k.labelEn ?? k.label ?? "",
+        uk: k.labelUk ?? k.label ?? "",
+      });
+    }
+  }
+  return m;
+}
 
 const NEO_BLUE = "#00eaff";
 const NEO_PINK = "#ff00e6";
@@ -18,11 +33,6 @@ function formatTime(ms) {
   const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
   const ss = String(totalSec % 60).padStart(2, "0");
   return `${mm}:${ss}`;
-}
-
-function codeToChar(code) {
-  if (!code?.startsWith("Key")) return "";
-  return code.replace("Key", "").toLowerCase();
 }
 
 const Segmented = ({ value, onChange, options }) => (
@@ -238,11 +248,6 @@ export default function SpeedTest() {
     };
   }, []);
 
-  const bigChar = useMemo(() => {
-    const c = codeToChar(currentTargetCode);
-    return c ? c.toUpperCase() : "";
-  }, [currentTargetCode]);
-
   const reset = useCallback(() => {
     setFinished(false);
     finishedRef.current = false;
@@ -255,6 +260,24 @@ export default function SpeedTest() {
     setKeyboardErrorFlash(false);
     setCurrentTargetCode(null);
   }, []);
+    
+    const codeToLabel = useMemo(() => buildCodeToLabelMap(), []);
+    const labelOf = useCallback(
+    (code) => {
+        const it = codeToLabel.get(code);
+        if (!it) return "";
+        const v = layout === "uk" ? it.uk : it.en;
+        return v || "";
+    },
+    [codeToLabel, layout]
+    );
+
+    const bigChar = useMemo(() => {
+    if (!currentTargetCode) return "";
+    const base = labelOf(currentTargetCode);
+    if (!base) return "";
+    return String(base).toUpperCase();
+    }, [currentTargetCode, labelOf]);
 
   return (
     <div className="relative w-full min-h-screen text-cyan-300 font-mono px-2">
