@@ -345,7 +345,7 @@ const Dashboard = () => {
       }))
       .filter((l) => Number.isFinite(l.number))
       .sort((a, b) => a.number - b.number);
-  }, []);
+    }, []);
 
   const completedSet = useMemo(
     () => new Set(Array.isArray(lessonProgress?.completed) ? lessonProgress.completed.map(Number) : []),
@@ -378,6 +378,8 @@ const Dashboard = () => {
     () => ({ number: currentLessonNumber }),
     [currentLessonNumber]
   );
+
+  const repeatTo = `/lessons/${currentLesson?.number || 1}`;
 
   const safeSessions = useMemo(() => (Array.isArray(sessions) ? sessions : []), [sessions]);
 
@@ -463,8 +465,7 @@ const Dashboard = () => {
               <Link to="/dashboard/speed-test" className="block">
                 <SmallButton label={isUK ? "ТЕСТ" : "SPEED TEST"} color="pink" />
               </Link>
-              <Link
-                          to={`/lessons/${currentLesson.number}`} className="block">
+              <Link to={repeatTo} className="block">
               <SmallButton label={isUK ? "ПОВТОР" : "REPEAT"} color="purple" />
               </Link>
             </div>
