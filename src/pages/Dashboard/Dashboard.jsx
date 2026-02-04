@@ -5,6 +5,7 @@ import useStats from "../../hooks/useStats";
 import { computeAggregates, groupDailySeries, seriesBySession } from "../../data/statsStore";
 import { loadLessonProgress, onLessonProgressUpdate } from "../../data/lessonProgressStore";
 import { Link } from "react-router-dom";
+import lessons from "../../data/lessonData";
 
 const NEO_BLUE = "#00eaff";
 const NEO_PINK = "#ff00e6";
@@ -336,6 +337,48 @@ const Dashboard = () => {
     return nums.length ? Math.max(...nums) : 0;
   }, [lessonProgress]);
 
+    const list = useMemo(() => {
+    const arr = Array.isArray(lessons) ? lessons : [];
+    return arr
+      .map((l) => ({
+        number: Number(l.id),
+      }))
+      .filter((l) => Number.isFinite(l.number))
+      .sort((a, b) => a.number - b.number);
+  }, []);
+
+  const completedSet = useMemo(
+    () => new Set(Array.isArray(lessonProgress?.completed) ? lessonProgress.completed.map(Number) : []),
+    [lessonProgress]
+  );
+
+  const totalLessons = list.length;
+
+  const consecutiveDone = useMemo(() => {
+    let n = 0;
+    for (let i = 1; i <= totalLessons; i++) {
+      if (!completedSet.has(i)) break;
+      n++;
+    }
+    return n;
+  }, [completedSet, totalLessons]);
+
+  const currentLessonNumber = useMemo(() => {
+    const last = Number(lessonProgress?.lastStarted);
+
+    if (Number.isFinite(last) && last >= 1 && last <= totalLessons) {
+      if (!completedSet.has(last)) return last;
+      return last; 
+    }
+
+    return Math.min(consecutiveDone + 1, totalLessons || 1);
+  }, [lessonProgress, completedSet, consecutiveDone, totalLessons]);
+
+  const currentLesson = useMemo(
+    () => ({ number: currentLessonNumber }),
+    [currentLessonNumber]
+  );
+
   const safeSessions = useMemo(() => (Array.isArray(sessions) ? sessions : []), [sessions]);
 
   const lessonSessions = useMemo(
@@ -420,7 +463,10 @@ const Dashboard = () => {
               <Link to="/dashboard/speed-test" className="block">
                 <SmallButton label={isUK ? "ТЕСТ" : "SPEED TEST"} color="pink" />
               </Link>
+              <Link
+                          to={`/lessons/${currentLesson.number}`} className="block">
               <SmallButton label={isUK ? "ПОВТОР" : "REPEAT"} color="purple" />
+              </Link>
             </div>
           </section>
 
