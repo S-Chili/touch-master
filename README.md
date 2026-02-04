@@ -1,16 +1,42 @@
-# React + Vite
+<div align="center">
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# ✨ TouchMaster  
+### Cyber-minimal touch typing lab
 
-Currently, two official plugins are available:
+<p align="center">
+  <b>Practice. Rhythm. Progress.</b>
+</p>
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18-00eaff?style=for-the-badge&logo=react&logoColor=000"/>
+  <img src="https://img.shields.io/badge/Vite-build-ff00e6?style=for-the-badge&logo=vite&logoColor=000"/>
+  <img src="https://img.shields.io/badge/Tailwind-CSS-8a2be2?style=for-the-badge&logo=tailwindcss&logoColor=000"/>
+  <img src="https://img.shields.io/badge/LocalStorage-no_server-00eaff?style=for-the-badge"/>
+</p>
 
-## React Compiler
+<p align="center">
+  🧠 Minimal UI · ⌨️ Touch typing · 📊 Real progress
+</p>
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+</div>
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🌌 About
+
+**TouchMaster** — це персональна лабораторія для прокачки сліпого друку та концентрації.  
+Жодного шуму. Жодних зайвих елементів.  
+Тільки **ритм**, **метрики** і **поступовий прогрес**.
+
+> Створено як інструмент для щоденної практики з акцентом на дисципліну, а не гейміфікацію.
+
+---
+
+## 🧪 Features
+
+```txt
+▸ Lessons
+▸ Warm-Up
+▸ Free Typing
+▸ Speed Test
+▸ Local Stats
