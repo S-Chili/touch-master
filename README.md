@@ -40,6 +40,7 @@
 ▸ Free Typing
 ▸ Speed Test
 ▸ Local Stats
+```
 
 ## ✍️ Lessons
 
