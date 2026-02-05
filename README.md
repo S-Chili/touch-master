@@ -1,7 +1,7 @@
 <div align="center">
 
 # ✨ TouchMaster  
-### Cyber-minimal touch typing lab
+### Cyber-minimal touch typing lab, working for 2 languages
 
 <p align="center">
   <b>Practice. Rhythm. Progress.</b>
